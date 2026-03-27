@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DCAlytics</title>
+  <link rel="icon" type="image/svg+xml" href="assets/dcalytics-favicon.svg">
+  <link rel="shortcut icon" href="assets/dcalytics-favicon.svg">
+  <link rel="apple-touch-icon" href="assets/dcalytics-favicon.svg">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="page-glow page-glow-left"></div>
+  <div class="page-glow page-glow-right"></div>
+
+  <main class="app-shell">
+    <header class="hero">
+      <div class="hero-copy brand-stage">
+        <h1 class="visually-hidden">DCAlytics</h1>
+        <img class="brand-lockup" src="assets/dcalytics-brand.svg" alt="DCAlytics brand header">
+        <p class="eyebrow">Browser-first crypto tracking</p>
+        <p class="hero-text">
+          Track buys and sells, clean up the logbook, and read the portfolio
+          story back through a browser-first dashboard built from your own saved trades.
+        </p>
+        <div class="hero-badges">
+          <span class="hero-badge">Live Dashboard</span>
+          <span class="hero-badge">Local Browser Data</span>
+          <span class="hero-badge">Blue + Mint Brand Theme</span>
+        </div>
+      </div>
+
+      <aside class="hero-panel">
+        <p class="hero-panel-label">Current focus</p>
+        <strong>Transaction capture and portfolio overview now live in the same workflow.</strong>
+        <span>The dashboard is transaction-driven for now, which keeps it useful today and ready for live pricing later.</span>
+
+        <div class="hero-currency-control">
+          <label for="portfolio-currency">Portfolio Currency</label>
+          <select id="portfolio-currency" class="hero-select" aria-describedby="portfolio-currency-note portfolio-currency-feedback">
+            <option value="usd">USD</option>
+          </select>
+          <small id="portfolio-currency-note">Used for new trades and dashboard pricing. Saved trades keep their original currency, and the dashboard converts them into this base currency.</small>
+          <p id="portfolio-currency-feedback" class="hero-currency-feedback" aria-live="polite"></p>
+        </div>
+      </aside>
+    </header>
+
+    <nav class="tab-nav" aria-label="Main pages" role="tablist">
+      <button id="dashboard-tab" class="tab-link" data-view="dashboard" type="button" role="tab" aria-controls="dashboard" aria-selected="false">Dashboard</button>
+      <button id="add-transaction-tab" class="tab-link active" data-view="add-transaction" type="button" role="tab" aria-controls="add-transaction" aria-selected="true">Add Transaction</button>
+      <button id="add-by-txid-tab" class="tab-link" data-view="add-by-txid" type="button" role="tab" aria-controls="add-by-txid" aria-selected="false">Add by TXID</button>
+      <button id="trade-log-tab" class="tab-link" data-view="trade-log" type="button" role="tab" aria-controls="trade-log" aria-selected="false">Trade Log</button>
+      <button id="strategy-tab" class="tab-link" data-view="strategy" type="button" role="tab" aria-controls="strategy" aria-selected="false">Strategy</button>
+    </nav>
+
+    <section id="dashboard" class="tab-panel" role="tabpanel" aria-labelledby="dashboard-tab">
+      <div class="panel-header">
+        <div>
+          <p class="panel-kicker">Page 1</p>
+          <h2>Dashboard</h2>
+        </div>
+        <span class="status-pill status-pill-live">Live Pricing</span>
+      </div>
+
+      <p class="dashboard-note">
+        Built from your saved transactions, with live current prices layered into the coin summary when market IDs are available.
+      </p>
+
+      <div id="dashboard-empty" class="empty-state dashboard-empty">
+        <p>No portfolio data yet.</p>
+        <span>Add a few trades and the dashboard will summarize capital flow, coin activity, and open positions.</span>
+      </div>
+
+      <div id="dashboard-content" hidden>
+        <div class="dashboard-status-grid">
+          <article class="dashboard-status-card">
+            <p class="card-label">Price Feed</p>
+            <strong id="dashboard-price-status" class="dashboard-status-value" data-status="neutral">Waiting</strong>
+            <span id="dashboard-price-detail" class="dashboard-status-detail">
+              Add open positions with market IDs to start live pricing.
+            </span>
+          </article>
+
+          <article class="dashboard-status-card">
+            <p class="card-label">Last Update</p>
+            <strong id="dashboard-price-updated" class="dashboard-status-value" data-status="neutral">-</strong>
+            <span id="dashboard-price-coverage" class="dashboard-status-detail">
+              No live price coverage yet.
+            </span>
+            <button id="dashboard-refresh-prices" class="ghost-button dashboard-status-button" type="button">
+              Update Prices
+            </button>
+          </article>
+
+          <article class="dashboard-status-card">
+            <p class="card-label">FX Conversion</p>
+            <strong id="dashboard-conversion-status" class="dashboard-status-value" data-status="neutral">Base Currency</strong>
+            <span id="dashboard-conversion-detail" class="dashboard-status-detail">
+              Saved trades stay in their own currency in the logbook and convert only inside the dashboard.
+            </span>
+          </article>
+        </div>
+
+        <article class="dashboard-block dashboard-allocation-bar">
+          <div class="dashboard-block-header">
+            <div>
+              <p class="card-label">Allocation</p>
+              <h3>Open-position mix by coin.</h3>
+            </div>
+            <span id="dashboard-allocation-summary" class="dashboard-caption"></span>
+          </div>
+
+          <div class="dashboard-allocation-layout">
+            <div class="allocation-shell">
+              <div id="dashboard-allocation-empty" class="dashboard-chart-empty">
+                Add open positions to see the allocation chart.
+              </div>
+
+              <div id="dashboard-allocation-chart" class="allocation-donut" hidden aria-label="Coin allocation chart" role="img">
+                <div class="allocation-donut-center">
+                  <span id="dashboard-allocation-total-label">Open Cost Basis</span>
+                  <strong id="dashboard-allocation-total">$0.00</strong>
+                </div>
+              </div>
+            </div>
+
+            <div id="dashboard-allocation-legend" class="dashboard-list dashboard-legend"></div>
+          </div>
+        </article>
+
+        <div class="dashboard-metrics">
+          <article class="metric-card metric-card-feature">
+            <p class="card-label">Total Transactions</p>
+            <strong id="metric-total-transactions" class="metric-value">0</strong>
+            <span class="metric-caption">All buys and sells saved in the browser.</span>
+          </article>
+
+          <article class="metric-card">
+            <p class="card-label">Open Coins</p>
+            <strong id="metric-open-coins" class="metric-value">0</strong>
+            <span class="metric-caption">Coins with a positive remaining quantity.</span>
+          </article>
+
+          <article class="metric-card">
+            <p class="card-label">Total Buy Value</p>
+            <strong id="metric-total-buys" class="metric-value">$0.00</strong>
+            <span class="metric-caption">Total capital deployed through buys.</span>
+          </article>
+
+          <article class="metric-card">
+            <p class="card-label">Total Sell Value</p>
+            <strong id="metric-total-sells" class="metric-value">$0.00</strong>
+            <span class="metric-caption">Total capital returned through sells.</span>
+          </article>
+
+          <article class="metric-card">
+            <p class="card-label">Net Invested</p>
+            <strong id="metric-net-invested" class="metric-value">$0.00</strong>
+            <span class="metric-caption">Buys plus fees minus sells.</span>
+          </article>
+
+          <article class="metric-card">
+            <p class="card-label">Total Fees</p>
+            <strong id="metric-total-fees" class="metric-value">$0.00</strong>
+            <span class="metric-caption">Combined commissions across all trades.</span>
+          </article>
+
+          <article class="metric-card">
+            <p class="card-label">Portfolio Value</p>
+            <strong id="metric-portfolio-value" class="metric-value">$0.00</strong>
+            <span class="metric-caption">Current value of priced open positions.</span>
+          </article>
+
+          <article class="metric-card">
+            <p class="card-label">Realized P/L</p>
+            <strong id="metric-realized-pl" class="metric-value">$0.00</strong>
+            <span class="metric-caption">Locked-in profit and loss from completed sells.</span>
+          </article>
+
+          <article class="metric-card">
+            <p class="card-label">Unrealized P/L</p>
+            <strong id="metric-unrealized-pl" class="metric-value">$0.00</strong>
+            <span class="metric-caption">Open-position P/L across holdings with live prices.</span>
+          </article>
+
+          <article class="metric-card">
+            <p class="card-label">Total P/L</p>
+            <strong id="metric-total-pl" class="metric-value">$0.00</strong>
+            <span class="metric-caption">Realized plus unrealized P/L on priced holdings.</span>
+          </article>
+        </div>
+
+        <div class="dashboard-layout">
+          <article class="dashboard-block dashboard-block-wide">
+            <div class="dashboard-block-header">
+              <div>
+                <p class="card-label">Coin Summary</p>
+                <h3>How each coin is sitting in the portfolio right now.</h3>
+              </div>
+              <span id="dashboard-position-summary" class="dashboard-caption"></span>
+            </div>
+
+            <div class="table-wrap dashboard-table-wrap">
+              <table class="dashboard-table">
+                <thead>
+                  <tr>
+                    <th>Coin</th>
+                    <th>Quantity</th>
+                    <th>Avg Cost</th>
+                    <th>Current Price</th>
+                    <th>ROI</th>
+                  </tr>
+                </thead>
+                <tbody id="dashboard-position-body"></tbody>
+              </table>
+            </div>
+
+            <div id="dashboard-detail-card" class="dashboard-detail-card">
+              <div class="dashboard-block-header">
+                <div>
+                  <p class="card-label">Selected Coin</p>
+                  <h3 id="dashboard-detail-title">Choose a coin</h3>
+                </div>
+                <span id="dashboard-detail-caption" class="dashboard-caption">
+                  Click a coin in the summary to open the full breakdown.
+                </span>
+              </div>
+
+              <div id="dashboard-detail-empty" class="dashboard-chart-empty dashboard-detail-empty">
+                Risk, realized P/L, unrealized P/L, and strategy targets will appear here once you select a coin.
+              </div>
+
+              <div id="dashboard-detail-grid" class="dashboard-detail-grid" hidden></div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="add-transaction" class="tab-panel active" role="tabpanel" aria-labelledby="add-transaction-tab">
+      <div class="panel-header">
+        <div>
+          <p class="panel-kicker">Page 2</p>
+          <h2>Add Transaction</h2>
+        </div>
+        <span class="status-pill status-pill-live">Ready</span>
+      </div>
+
+      <div class="content-grid">
+        <form id="transaction-form" class="form-card">
+          <div class="form-grid">
+            <label>
+              <span>Coin</span>
+              <input
+                id="coin"
+                name="coin"
+                type="text"
+                placeholder="Bitcoin, BTC, Kaspa, Pepe..."
+                autocomplete="off"
+                spellcheck="false"
+                required
+              >
+              <small>Start typing a coin name or ticker to search suggestions. You can still enter it manually.</small>
+            </label>
+
+            <label>
+              <span>Market ID</span>
+              <input
+                id="marketId"
+                name="marketId"
+                type="text"
+                placeholder="bitcoin"
+                autocomplete="off"
+                required
+              >
+              <small>Suggested from the coin field. If you know the exact market ID you want later, you can override it here.</small>
+            </label>
+
+            <fieldset class="segmented-field">
+              <legend>Type</legend>
+              <div class="segmented-control">
+                <label>
+                  <input type="radio" name="type" value="buy" checked>
+                  <span>Buy</span>
+                </label>
+                <label>
+                  <input type="radio" name="type" value="sell">
+                  <span>Sell</span>
+                </label>
+              </div>
+            </fieldset>
+
+            <label>
+              <span id="date-label">Entry Date</span>
+              <input id="transactionDate" name="transactionDate" type="date" required>
+            </label>
+
+            <label>
+              <span>Coin Price</span>
+              <input id="coinPrice" name="coinPrice" type="number" min="0" step="0.00000001" placeholder="0.00" required>
+            </label>
+
+            <label>
+              <span>Quantity</span>
+              <input id="quantity" name="quantity" type="number" min="0" step="0.00000001" placeholder="0.00" required>
+            </label>
+
+            <label>
+              <span>Risk</span>
+              <input id="risk" name="risk" type="number" min="0" step="0.00000001" placeholder="0.00" readonly>
+              <small>Calculated as coin price x quantity.</small>
+            </label>
+
+            <label>
+              <span>Commission Paid</span>
+              <input id="commission" name="commission" type="number" min="0" step="0.00000001" placeholder="0.00" value="0">
+            </label>
+
+            <label class="notes-field">
+              <span>Notes</span>
+              <textarea id="notes" name="notes" rows="4" placeholder="Setup, reasoning, exit plan, emotion, or anything useful later."></textarea>
+            </label>
+          </div>
+
+          <p id="edit-state" class="edit-state" hidden></p>
+
+          <div class="form-actions">
+            <button id="submit-transaction" type="submit" class="primary-button">Save Transaction</button>
+            <button id="reset-transaction" type="reset" class="ghost-button">Clear Form</button>
+          </div>
+
+          <p id="form-feedback" class="form-feedback" aria-live="polite"></p>
+        </form>
+
+        <aside class="summary-card">
+          <p class="card-label">Form behavior</p>
+          <div class="summary-list">
+            <div>
+              <span>Date label</span>
+              <strong>Switches between entry and exit</strong>
+            </div>
+            <div>
+              <span>Market ID</span>
+              <strong>Suggested from coin text, but fully editable</strong>
+            </div>
+            <div>
+              <span>Storage</span>
+              <strong>Saved in your browser with no backend</strong>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="trade-log" class="tab-panel" role="tabpanel" aria-labelledby="trade-log-tab">
+      <div class="panel-header">
+        <div>
+          <p class="panel-kicker">Page 4</p>
+          <h2>Trade Log</h2>
+        </div>
+        <span class="status-pill status-pill-live">Live Table</span>
+      </div>
+
+      <div class="trade-log-shell">
+        <div class="trade-log-header">
+          <div>
+            <p class="card-label">Stored transactions</p>
+            <h3>Your buys and sells appear here immediately.</h3>
+          </div>
+          <button id="clear-transactions" class="ghost-button" type="button">Clear All</button>
+        </div>
+
+        <p id="trade-log-feedback" class="trade-log-feedback" aria-live="polite"></p>
+
+        <div class="filter-bar">
+          <label class="filter-field">
+            <span>Year</span>
+            <select id="filter-year">
+              <option value="">All Years</option>
+            </select>
+          </label>
+
+          <label class="filter-field">
+            <span>Month</span>
+            <select id="filter-month">
+              <option value="">All Months</option>
+              <option value="01">January</option>
+              <option value="02">February</option>
+              <option value="03">March</option>
+              <option value="04">April</option>
+              <option value="05">May</option>
+              <option value="06">June</option>
+              <option value="07">July</option>
+              <option value="08">August</option>
+              <option value="09">September</option>
+              <option value="10">October</option>
+              <option value="11">November</option>
+              <option value="12">December</option>
+            </select>
+          </label>
+
+          <label class="filter-field">
+            <span>Coin</span>
+            <select id="filter-coin">
+              <option value="">All Coins</option>
+            </select>
+          </label>
+
+          <label class="filter-field">
+            <span>Type</span>
+            <select id="filter-type">
+              <option value="">All Types</option>
+              <option value="buy">Buy</option>
+              <option value="sell">Sell</option>
+            </select>
+          </label>
+
+          <div class="filter-actions">
+            <button id="clear-filters" class="ghost-button" type="button">Clear Filters</button>
+          </div>
+        </div>
+
+        <p id="filter-summary" class="filter-summary"></p>
+
+        <div id="empty-state" class="empty-state">
+          <p>No transactions yet.</p>
+          <span>Add your first trade from the Add Transaction tab to start building the log.</span>
+        </div>
+
+        <div class="table-wrap">
+          <table id="trade-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Coin</th>
+                <th>Price</th>
+                <th>Quantity</th>
+                <th>Risk</th>
+                <th>Commission</th>
+                <th>Notes</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="trade-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="add-by-txid" class="tab-panel" role="tabpanel" aria-labelledby="add-by-txid-tab">
+      <div class="panel-header">
+        <div>
+          <p class="panel-kicker">Page 3</p>
+          <h2>Add by TXID</h2>
+        </div>
+        <span class="status-pill">Review Flow</span>
+      </div>
+
+      <p class="dashboard-note">
+        This page now fetches live transaction data where supported, then also tries to prefill the historical coin price from the transaction timestamp before anything reaches the logbook.
+      </p>
+
+      <div class="content-grid">
+        <form id="txid-lookup-form" class="form-card">
+          <div class="form-grid">
+            <label>
+              <span>Coin</span>
+              <input
+                id="txid-coin"
+                name="coin"
+                type="text"
+                placeholder="Bitcoin, ETH, Solana..."
+                autocomplete="off"
+                spellcheck="false"
+                required
+              >
+              <small>Start typing a coin name or ticker and choose from the suggestions if you want.</small>
+            </label>
+
+            <label>
+              <span>Network</span>
+              <input
+                id="txid-network"
+                name="network"
+                type="text"
+                placeholder="Bitcoin, Ethereum, Base, Polygon..."
+                required
+              >
+              <small>Live fetch currently supports Bitcoin, Solana, Ethereum, Base, Arbitrum, Optimism, Polygon, Gnosis, and Scroll.</small>
+            </label>
+
+            <label class="notes-field hash-field">
+              <span>TXID / Transaction Hash</span>
+              <textarea
+                id="txid-hash"
+                name="transactionHash"
+                rows="3"
+                placeholder="Paste the full transaction hash here."
+                required
+              ></textarea>
+              <small>The app fetches what it can, uses the transaction timestamp for historical price when available, and still waits for your approval before adding anything.</small>
+            </label>
+          </div>
+
+          <div class="form-actions">
+            <button id="txid-prepare-review" type="submit" class="primary-button">Fetch and Prepare Review</button>
+            <button type="reset" class="ghost-button">Clear</button>
+          </div>
+
+          <p id="txid-fetch-feedback" class="form-feedback" aria-live="polite"></p>
+        </form>
+
+        <aside class="summary-card">
+          <p class="card-label">Planned flow</p>
+          <div class="summary-list">
+            <div>
+              <span>Step 1</span>
+              <strong>User provides coin, network, and TXID or hash.</strong>
+            </div>
+            <div>
+              <span>Step 2</span>
+              <strong>The app fetches supported live chain data first, then opens the review form with date, fee, quantity, and historical price prefills when available.</strong>
+            </div>
+            <div>
+              <span>Step 3</span>
+              <strong>User approves the details before anything reaches the trade log.</strong>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <article id="txid-review-card" class="form-card txid-review-card" hidden>
+        <div class="dashboard-block-header">
+          <div>
+            <p class="card-label">Review Before Adding</p>
+            <h3>Approve the transaction details before it touches the logbook.</h3>
+          </div>
+          <span id="txid-review-badge" class="dashboard-caption">Manual Review</span>
+        </div>
+
+        <div class="txid-context">
+          <span id="txid-review-coin-chip" class="txid-context-chip">Coin: -</span>
+          <span id="txid-review-network-chip" class="txid-context-chip">Network: -</span>
+          <span id="txid-review-hash-chip" class="txid-context-chip">Hash: -</span>
+        </div>
+
+        <form id="txid-review-form">
+          <div class="form-grid">
+            <label>
+              <span>Coin</span>
+              <input id="txid-review-coin" name="coin" type="text" autocomplete="off" spellcheck="false" required>
+            </label>
+
+            <label>
+              <span>Network</span>
+              <input id="txid-review-network" name="network" type="text" required>
+            </label>
+
+            <label>
+              <span>TXID / Hash</span>
+              <input id="txid-review-hash" name="transactionHash" type="text" required>
+            </label>
+
+            <label>
+              <span>Market ID</span>
+              <input id="txid-review-market-id" name="marketId" type="text" required>
+            </label>
+
+            <fieldset class="segmented-field">
+              <legend>Type</legend>
+              <div class="segmented-control">
+                <label>
+                  <input type="radio" name="txidType" value="buy" checked>
+                  <span>Buy</span>
+                </label>
+                <label>
+                  <input type="radio" name="txidType" value="sell">
+                  <span>Sell</span>
+                </label>
+              </div>
+            </fieldset>
+
+            <label>
+              <span id="txid-date-label">Entry Date</span>
+              <input id="txid-transaction-date" name="transactionDate" type="date" required>
+            </label>
+
+            <label>
+              <span>Coin Price</span>
+              <input id="txid-coin-price" name="coinPrice" type="number" min="0" step="0.00000001" placeholder="0.00" required>
+            </label>
+
+            <label>
+              <span>Quantity</span>
+              <input id="txid-quantity" name="quantity" type="number" min="0" step="0.00000001" placeholder="0.00" required>
+            </label>
+
+            <label>
+              <span>Risk</span>
+              <input id="txid-risk" name="risk" type="number" min="0" step="0.00000001" placeholder="0.00" readonly>
+              <small>Calculated as coin price x quantity.</small>
+            </label>
+
+            <label>
+              <span>Commission Paid</span>
+              <input id="txid-commission" name="commission" type="number" min="0" step="0.00000001" placeholder="0.00" value="0">
+            </label>
+
+            <label class="notes-field">
+              <span>Notes</span>
+              <textarea id="txid-notes" name="notes" rows="4" placeholder="Use this to confirm context before you approve the log entry."></textarea>
+            </label>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="primary-button">Approve and Add</button>
+            <button id="txid-discard-review" type="button" class="ghost-button">Discard Review</button>
+          </div>
+
+          <p id="txid-review-feedback" class="form-feedback" aria-live="polite"></p>
+        </form>
+      </article>
+    </section>
+
+    <section id="strategy" class="tab-panel" role="tabpanel" aria-labelledby="strategy-tab">
+      <div class="panel-header">
+        <div>
+          <p class="panel-kicker">Page 5</p>
+          <h2>Strategy</h2>
+        </div>
+        <span class="status-pill">Coming Next</span>
+      </div>
+
+      <p class="dashboard-note">
+        This tab will turn the portfolio into a sell-planning workspace once you explain the strategy logic you want to use.
+      </p>
+
+      <div class="content-grid strategy-grid">
+        <article class="form-card strategy-feature-card">
+          <p class="card-label">Strategy Workspace</p>
+          <h3>Suggested sell ladders will live here.</h3>
+          <p class="strategy-copy">
+            Once you explain the rules, this page can convert current positions into target price ladders, quantity splits, and expected cash-out scenarios without losing your ability to override them.
+          </p>
+
+          <div class="summary-list">
+            <div>
+              <span>Portfolio input</span>
+              <strong>Read open positions from the dashboard and let you focus on a specific coin.</strong>
+            </div>
+            <div>
+              <span>Suggested outputs</span>
+              <strong>Generate multiple sell levels, position sizing ideas, and value unlocked at each target.</strong>
+            </div>
+            <div>
+              <span>User control</span>
+              <strong>Everything stays reviewable and editable before any strategy is accepted.</strong>
+            </div>
+          </div>
+        </article>
+
+        <aside class="summary-card">
+          <p class="card-label">Likely inputs</p>
+          <div class="summary-list">
+            <div>
+              <span>Coin</span>
+              <strong>Selected from holdings or entered manually if needed.</strong>
+            </div>
+            <div>
+              <span>Average entry</span>
+              <strong>Read from the trade log and position summary.</strong>
+            </div>
+            <div>
+              <span>Sell logic</span>
+              <strong>Your rules for profit-taking, scaling out, and protecting remaining size.</strong>
+            </div>
+          </div>
+        </aside>
+
+        <aside class="summary-card">
+          <p class="card-label">Likely outputs</p>
+          <div class="summary-list">
+            <div>
+              <span>Target ladder</span>
+              <strong>Multiple suggested prices instead of a single all-or-nothing exit.</strong>
+            </div>
+            <div>
+              <span>Allocation impact</span>
+              <strong>How each target changes remaining size and portfolio concentration.</strong>
+            </div>
+            <div>
+              <span>Execution notes</span>
+              <strong>Space for the reasoning behind the plan so the strategy page stays practical.</strong>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+<svg width="1500" height="500" viewBox="0 0 1500 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1500" height="500" rx="36" fill="#091018"/>
+  <circle cx="231" cy="249" r="150" stroke="#3E86F5" stroke-width="18"/>
+  <rect x="166" y="267" width="25" height="67" fill="#31E8A0"/>
+  <rect x="208" y="233" width="25" height="101" fill="#31E8A0"/>
+  <rect x="250" y="200" width="25" height="134" fill="#31E8A0"/>
+  <rect x="292" y="167" width="25" height="167" fill="#31E8A0"/>
+  <text x="420" y="292" fill="#E8ECF1" font-size="145" font-family="Aptos, Segoe UI, Arial, sans-serif" letter-spacing="-4">DCAlytics</text>
+</svg>
