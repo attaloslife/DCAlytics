@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DCAlytics Web App Preview</title>
+    <link rel="icon" href="./assets/dcalytics-favicon.svg" type="image/svg+xml" />
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #081018;
+        --panel: rgba(10, 16, 25, 0.88);
+        --line: rgba(117, 169, 255, 0.16);
+        --line-strong: rgba(117, 169, 255, 0.3);
+        --text: #ecf1f7;
+        --muted: #97a7bb;
+        --blue: #3d83f5;
+        --blue-soft: rgba(61, 131, 245, 0.14);
+        --mint: #31e8a0;
+        --warning: #ffca6c;
+        --shadow: 0 30px 80px rgba(0, 0, 0, 0.3);
+        --radius-xl: 28px;
+        --radius-lg: 22px;
+        --radius-md: 18px;
+      }
+
+      * { box-sizing: border-box; }
+
+      html, body {
+        margin: 0;
+        min-height: 100%;
+        background:
+          radial-gradient(circle at top left, rgba(61, 131, 245, 0.18), transparent 28%),
+          radial-gradient(circle at top right, rgba(49, 232, 160, 0.12), transparent 24%),
+          linear-gradient(180deg, #060b12 0%, #081018 100%);
+        color: var(--text);
+        font-family: "Space Grotesk", "Aptos", "Segoe UI", sans-serif;
+      }
+
+      a { color: inherit; text-decoration: none; }
+      button, input, select, textarea { font: inherit; }
+
+      .preview-shell { display: grid; grid-template-columns: 320px minmax(0, 1fr); min-height: 100vh; }
+      .sidebar, .content-card, .hero-strip, .metric-card, .surface-card, .picker-option, .picker-selection, .activity-item {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(14px);
+      }
+
+      .sidebar {
+        margin: 20px 0 20px 20px;
+        padding: 26px;
+        border-radius: var(--radius-xl);
+        display: grid;
+        gap: 22px;
+        align-content: start;
+      }
+
+      .brand-lockup { display: flex; align-items: center; gap: 14px; }
+      .brand-lockup img { width: 52px; height: 52px; border-radius: 16px; }
+      .mini-copy, .section-copy, .page-subtitle, .table-subcopy, .picker-option small, .picker-selection small { color: var(--muted); }
+
+      .eyebrow {
+        display: inline-flex; align-items: center; gap: 10px; color: var(--mint);
+        font-size: 0.8rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+      }
+      .eyebrow::before { content: ""; width: 18px; height: 2px; background: currentColor; }
+
+      .sidebar-account, .sidebar-note, .portfolio-switcher, .field-stack, .field-grid, .picker-stack, .activity-list, .table-actions {
+        display: grid; gap: 12px;
+      }
+
+      .sidebar-account, .sidebar-note, .portfolio-switcher, .hero-strip, .surface-card, .metric-card {
+        border-radius: var(--radius-lg);
+      }
+
+      .sidebar-account, .sidebar-note {
+        padding: 16px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.02);
+      }
+
+      .portfolio-switcher select, .field-group input, .field-group select, .field-group textarea {
+        width: 100%;
+        border-radius: 16px;
+        border: 1px solid var(--line-strong);
+        background: rgba(7, 12, 18, 0.92);
+        color: var(--text);
+        padding: 12px 14px;
+      }
+
+      .field-group { display: grid; gap: 8px; }
+      .field-group span { font-size: 0.9rem; color: var(--muted); }
+      .field-group textarea { min-height: 110px; resize: vertical; }
+
+      .button-primary, .button-secondary, .nav-button, .picker-option {
+        transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+      }
+      .button-primary, .button-secondary, .nav-button {
+        display: inline-flex; align-items: center; justify-content: center;
+        border-radius: 999px; padding: 12px 18px; font-weight: 700; cursor: pointer;
+        border: 1px solid transparent;
+      }
+
+      .button-primary { background: linear-gradient(135deg, var(--blue), #66a4ff); color: #07111d; }
+      .button-secondary, .nav-button {
+        background: rgba(255, 255, 255, 0.03); border-color: var(--line); color: var(--text);
+      }
+      .button-primary:hover, .button-secondary:hover, .nav-button:hover, .picker-option:hover { transform: translateY(-1px); }
+
+      .nav-button { width: 100%; justify-content: flex-start; border-radius: 18px; padding: 14px 16px; }
+      .nav-button.active { background: var(--blue-soft); border-color: var(--line-strong); }
+
+      .sidebar-note { display: flex; align-items: center; gap: 12px; }
+      .status-dot { width: 10px; height: 10px; border-radius: 999px; background: var(--mint); flex: 0 0 auto; }
+
+      .content { padding: 20px 20px 20px 0; }
+      .content-card { border-radius: var(--radius-xl); min-height: calc(100vh - 40px); padding: 28px; }
+      .hero-strip {
+        margin-bottom: 24px; padding: 18px 20px; display: flex; justify-content: space-between;
+        gap: 16px; align-items: center; flex-wrap: wrap;
+      }
+
+      .page-header { display: flex; justify-content: space-between; gap: 24px; align-items: start; flex-wrap: wrap; }
+      .page-title { margin: 8px 0 0; font-size: clamp(2rem, 4vw, 3.4rem); line-height: 0.98; }
+      .status-chip {
+        display: inline-flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 999px;
+        background: rgba(49, 232, 160, 0.12); border: 1px solid rgba(49, 232, 160, 0.24); color: var(--mint); font-weight: 700;
+      }
+
+      .banner {
+        margin-top: 20px; padding: 14px 16px; border-radius: 18px; border: 1px solid var(--line);
+        background: rgba(49, 232, 160, 0.08); color: var(--text);
+      }
+
+      .tab-strip, .summary-grid, .content-grid, .two-column { display: grid; gap: 20px; }
+      .tab-strip { grid-template-columns: repeat(6, minmax(0, 1fr)); margin-top: 24px; }
+      .summary-grid { margin-top: 24px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      .content-grid { margin-top: 24px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .two-column { margin-top: 24px; grid-template-columns: minmax(0, 1.2fr) minmax(300px, 0.8fr); }
+
+      .view { display: none; margin-top: 24px; }
+      .view.active { display: block; }
+      .metric-card, .surface-card { padding: 22px; }
+      .metric-card span { display: block; color: var(--muted); font-size: 0.88rem; }
+      .metric-card strong { display: block; margin-top: 8px; font-size: 1.7rem; }
+      .surface-card h2 { margin: 8px 0 0; font-size: 1.45rem; }
+      .inline-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 18px; }
+      .inline-note {
+        padding: 14px 16px; border-radius: 18px; border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.02); color: var(--muted);
+      }
+
+      .field-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .picker-results { display: grid; gap: 10px; }
+      .picker-option, .picker-selection, .activity-item { padding: 14px 16px; border-radius: var(--radius-md); }
+      .picker-option { text-align: left; cursor: pointer; }
+      .picker-option.selected { border-color: var(--line-strong); background: var(--blue-soft); }
+      .picker-option strong, .picker-selection strong, .activity-item strong { display: block; font-size: 1rem; }
+      .picker-option span, .picker-selection span { color: var(--muted); }
+
+      .activity-item-header, .activity-copy {
+        display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+      }
+
+      .type-pill {
+        display: inline-flex; align-items: center; justify-content: center; min-width: 78px;
+        padding: 8px 12px; border-radius: 999px; font-size: 0.84rem; font-weight: 700; letter-spacing: 0.04em;
+      }
+      .pill-buy { background: rgba(49, 232, 160, 0.12); border: 1px solid rgba(49, 232, 160, 0.24); color: var(--mint); }
+      .pill-sell { background: rgba(255, 202, 108, 0.12); border: 1px solid rgba(255, 202, 108, 0.24); color: var(--warning); }
+      .pill-neutral { background: rgba(61, 131, 245, 0.12); border: 1px solid rgba(61, 131, 245, 0.24); color: #97bcff; }
+
+      .table-scroll { margin-top: 24px; overflow-x: auto; }
+      .data-table { width: 100%; min-width: 1080px; border-collapse: collapse; }
+      .data-table th, .data-table td { padding: 16px 14px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+      .data-table th { color: var(--muted); font-size: 0.82rem; letter-spacing: 0.06em; text-transform: uppercase; }
+      .table-subcopy { display: block; margin-top: 6px; font-size: 0.9rem; }
+
+      .sample-block {
+        margin: 16px 0 0; padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--line);
+        background: rgba(4, 8, 14, 0.7); color: var(--muted); overflow-x: auto; white-space: pre-wrap;
+        font-family: "Cascadia Code", Consolas, monospace; font-size: 0.88rem; line-height: 1.62;
+      }
+
+      .portfolio-grid { display: grid; gap: 18px; margin-top: 24px; }
+      .portfolio-card { padding: 22px; border-radius: var(--radius-lg); border: 1px solid var(--line); background: rgba(255, 255, 255, 0.02); }
+      .portfolio-card-header { display: flex; justify-content: space-between; gap: 16px; align-items: start; flex-wrap: wrap; }
+      .portfolio-badges { display: flex; gap: 10px; flex-wrap: wrap; }
+
+      @media (max-width: 1120px) {
+        .preview-shell, .two-column, .content-grid { grid-template-columns: 1fr; }
+        .sidebar { margin-right: 20px; }
+        .content { padding: 0 20px 20px; }
+        .content-card { min-height: auto; }
+        .tab-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      }
+
+      @media (max-width: 760px) {
+        .summary-grid, .field-grid, .tab-strip { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="preview-shell">
+      <aside class="sidebar">
+        <div class="brand-lockup">
+          <img src="./assets/dcalytics-brand.svg" alt="DCAlytics" />
+          <div>
+            <span class="eyebrow">DCAlytics</span>
+            <h1 style="margin: 8px 0 0; font-size: 1.32rem;">Portfolio Workspace</h1>
+          </div>
+        </div>
+
+        <p class="mini-copy">
+          Static preview of the new authenticated web app shell. This file is visual-only and uses sample data.
+        </p>
+
+        <div class="sidebar-account">
+          <strong>Ersin Aytac</strong>
+          <span>2 live portfolios</span>
+        </div>
+
+        <div class="portfolio-switcher">
+          <span class="mini-copy">Active Portfolio</span>
+          <select>
+            <option>Long-Term Core</option>
+            <option>Swing Trading</option>
+          </select>
+          <button class="button-secondary" type="button">Switch Portfolio</button>
+        </div>
+
+        <div class="sidebar-note">
+          <span class="status-dot"></span>
+          <span>Active: Long-Term Core</span>
+        </div>
+
+        <div class="field-stack">
+          <button class="nav-button active" type="button" data-view="dashboard">Dashboard</button>
+          <button class="nav-button" type="button" data-view="add-transaction">Add Transaction</button>
+          <button class="nav-button" type="button" data-view="trade-log">Trade Log</button>
+          <button class="nav-button" type="button" data-view="imports">Imports & Exports</button>
+          <button class="nav-button" type="button" data-view="portfolios">Portfolios</button>
+          <button class="nav-button" type="button" data-view="settings">Settings</button>
+        </div>
+
+        <div class="inline-actions">
+          <button class="button-secondary" type="button">Manage Portfolios</button>
+          <button class="button-secondary" type="button">Sign Out</button>
+        </div>
+      </aside>
+
+      <main class="content">
+        <section class="content-card">
+          <div class="hero-strip">
+            <div>
+              <strong>Static visual preview</strong>
+              <span style="color: var(--muted);">Open this file directly in your browser and click the tabs to inspect the new web app direction.</span>
+            </div>
+            <span class="status-chip">M2 Preview</span>
+          </div>
+
+          <div class="tab-strip">
+            <button class="button-secondary nav-button active" type="button" data-view="dashboard">Dashboard</button>
+            <button class="button-secondary nav-button" type="button" data-view="add-transaction">Add Transaction</button>
+            <button class="button-secondary nav-button" type="button" data-view="trade-log">Trade Log</button>
+            <button class="button-secondary nav-button" type="button" data-view="imports">Imports & Exports</button>
+            <button class="button-secondary nav-button" type="button" data-view="portfolios">Portfolios</button>
+            <button class="button-secondary nav-button" type="button" data-view="settings">Settings</button>
+          </div>
+
+          <section class="view active" id="dashboard">
+            <header class="page-header">
+              <div>
+                <span class="eyebrow">App Shell</span>
+                <h1 class="page-title">Dashboard foundation</h1>
+                <p class="page-subtitle">
+                  The rebuilt shell now treats every workflow as portfolio-aware. Manual trades, imports,
+                  and exports all hang off the same database-backed ledger instead of local browser state.
+                </p>
+              </div>
+              <div class="status-chip">Protected by Auth</div>
+            </header>
+
+            <div class="banner">
+              This mirrors the new Next.js shell visually. The real app version now has working auth,
+              portfolio switching, manual ledger entry, and import/export flows.
+            </div>
+
+            <div class="summary-grid">
+              <article class="metric-card"><span>Auth</span><strong>Protected</strong></article>
+              <article class="metric-card"><span>Portfolios</span><strong>2</strong></article>
+              <article class="metric-card"><span>Trades</span><strong>14</strong></article>
+              <article class="metric-card"><span>Buy Volume</span><strong>$18,420.00</strong></article>
+            </div>
+
+            <div class="content-grid">
+              <article class="surface-card">
+                <span class="eyebrow">Ledger State</span>
+                <h2>Manual ledger is now live</h2>
+                <p class="section-copy">
+                  The new app can already save trades into source records plus ledger entries, edit them,
+                  delete them, and show them back inside a portfolio-specific trade log.
+                </p>
+                <div class="inline-actions">
+                  <button class="button-primary" type="button" data-view="add-transaction">Add Transaction</button>
+                  <button class="button-secondary" type="button" data-view="trade-log">Open Trade Log</button>
+                </div>
+              </article>
+
+              <article class="surface-card">
+                <span class="eyebrow">Next Layer</span>
+                <h2>Import, export, then external sync</h2>
+                <p class="section-copy">
+                  With manual entry and trade history living in the new web app shell, the next product
+                  step is wallet tracking and read-only exchange sync on top of the same ledger model.
+                </p>
+              </article>
+            </div>
+          </section>
+
+          <section class="view" id="add-transaction">
+            <header class="page-header">
+              <div>
+                <span class="eyebrow">Manual Ledger</span>
+                <h1 class="page-title">Add transaction</h1>
+                <p class="page-subtitle">
+                  This is the new chain-first manual flow. The real app stores the linked source record
+                  and normalized ledger row together so TXIDs, imports, wallets, and exchanges can all
+                  converge into one history later.
+                </p>
+              </div>
+              <button class="button-secondary" type="button" data-view="trade-log">View Trade Log</button>
+            </header>
+
+            <div class="two-column">
+              <article class="surface-card">
+                <span class="eyebrow">USD</span>
+                <h2>Record a manual trade</h2>
+                <p class="section-copy">
+                  The rebuilt version now uses the seeded chain and asset catalog instead of the old free
+                  text coin behavior.
+                </p>
+
+                <div class="field-stack">
+                  <div class="picker-stack">
+                    <label class="field-group">
+                      <span>Chain</span>
+                      <select>
+                        <option>Ethereum</option>
+                        <option>Bitcoin</option>
+                        <option>Solana</option>
+                        <option>Base</option>
+                      </select>
+                    </label>
+
+                    <div class="field-group">
+                      <span>Coin</span>
+                      <input type="text" value="ETH | Ethereum" />
+                      <div class="picker-results">
+                        <button class="picker-option selected" type="button">
+                          <strong>ETH</strong>
+                          <span>Ethereum</span>
+                          <small>Native asset</small>
+                        </button>
+                        <button class="picker-option" type="button">
+                          <strong>USDC</strong>
+                          <span>USD Coin</span>
+                          <small>0xa0b8...6eb48</small>
+                        </button>
+                        <button class="picker-option" type="button">
+                          <strong>USDT</strong>
+                          <span>Tether</span>
+                          <small>0xdAC1...31ec7</small>
+                        </button>
+                      </div>
+                      <div class="picker-selection">
+                        <strong>ETH</strong>
+                        <span>Ethereum</span>
+                        <small>Ethereum - Native</small>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="field-grid">
+                    <label class="field-group"><span>Type</span><select><option>Buy</option><option>Sell</option></select></label>
+                    <label class="field-group"><span>Quantity</span><input type="text" value="1.25000000" /></label>
+                    <label class="field-group"><span>Unit Price (USD)</span><input type="text" value="2450.00" /></label>
+                    <label class="field-group"><span>Fee (USD)</span><input type="text" value="12.50" /></label>
+                    <label class="field-group"><span>Date</span><input type="date" value="2026-01-05" /></label>
+                    <label class="field-group"><span>Time (optional)</span><input type="time" value="14:30" /></label>
+                    <label class="field-group"><span>TX Hash (optional)</span><input type="text" value="0x4174c4b...ab2f" /></label>
+                    <label class="field-group"><span>External Ref (optional)</span><input type="text" value="coinbase-fill-1" /></label>
+                  </div>
+
+                  <label class="field-group">
+                    <span>Notes</span>
+                    <textarea>Added during the January pullback. Intended for the long-term core portfolio.</textarea>
+                  </label>
+
+                  <div class="inline-note">
+                    Gross value is stored automatically as quantity x unit price in the active portfolio currency.
+                  </div>
+
+                  <div class="inline-actions">
+                    <button class="button-primary" type="button">Save Transaction</button>
+                    <button class="button-secondary" type="button">Cancel</button>
+                  </div>
+                </div>
+              </article>
+
+              <article class="surface-card">
+                <span class="eyebrow">Recent Activity</span>
+                <h2>Latest transactions</h2>
+                <p class="section-copy">
+                  The real page now shows recent portfolio activity here so you can keep context while entering or editing trades.
+                </p>
+
+                <div class="activity-list">
+                  <article class="activity-item">
+                    <div class="activity-item-header"><strong>ETH</strong><span class="type-pill pill-buy">BUY</span></div>
+                    <div class="activity-copy"><span>Ethereum</span><span>1.25</span><span>$3,062.50</span></div>
+                    <div class="activity-copy"><span>Jan 5, 2026, 2:30 PM</span><span>Edit</span></div>
+                  </article>
+                  <article class="activity-item">
+                    <div class="activity-item-header"><strong>SOL</strong><span class="type-pill pill-sell">SELL</span></div>
+                    <div class="activity-copy"><span>Solana</span><span>4.00</span><span>$760.00</span></div>
+                    <div class="activity-copy"><span>Jan 9, 2026, 9:10 AM</span><span>Edit</span></div>
+                  </article>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <section class="view" id="trade-log">
+            <header class="page-header">
+              <div>
+                <span class="eyebrow">Manual Ledger</span>
+                <h1 class="page-title">Trade log</h1>
+                <p class="page-subtitle">
+                  The trade log is now database-backed in the rebuilt app. Every row belongs to the active
+                  portfolio and supports edit/delete instead of relying on browser-only storage.
+                </p>
+              </div>
+              <button class="button-primary" type="button" data-view="add-transaction">Add Transaction</button>
+            </header>
+
+            <div class="summary-grid">
+              <article class="metric-card"><span>Entries</span><strong>14</strong></article>
+              <article class="metric-card"><span>Buy Volume</span><strong>$18,420.00</strong></article>
+              <article class="metric-card"><span>Sell Volume</span><strong>$5,780.00</strong></article>
+              <article class="metric-card"><span>Total Fees</span><strong>$148.60</strong></article>
+            </div>
+
+            <div class="table-scroll">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Date</th><th>Coin</th><th>Chain</th><th>Type</th><th>Quantity</th><th>Unit Price</th><th>Gross Value</th><th>Fee</th><th>Reference</th><th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Jan 5, 2026, 2:30 PM</td>
+                    <td><strong>ETH</strong><span class="table-subcopy">Ethereum</span></td>
+                    <td>Ethereum</td>
+                    <td><span class="type-pill pill-buy">BUY</span></td>
+                    <td>1.25000000</td>
+                    <td>$2,450.00</td>
+                    <td>$3,062.50</td>
+                    <td>$12.50</td>
+                    <td><strong>0x4174c4...ab2f</strong><span class="table-subcopy">Added during January pullback</span></td>
+                    <td><div class="table-actions"><button class="button-secondary" type="button">Edit</button><button class="button-secondary" type="button">Delete</button></div></td>
+                  </tr>
+                  <tr>
+                    <td>Jan 9, 2026, 9:10 AM</td>
+                    <td><strong>SOL</strong><span class="table-subcopy">Solana</span></td>
+                    <td>Solana</td>
+                    <td><span class="type-pill pill-sell">SELL</span></td>
+                    <td>4.00000000</td>
+                    <td>$190.00</td>
+                    <td>$760.00</td>
+                    <td>$3.20</td>
+                    <td><strong>trading-bot-4</strong><span class="table-subcopy">Partial take profit</span></td>
+                    <td><div class="table-actions"><button class="button-secondary" type="button">Edit</button><button class="button-secondary" type="button">Delete</button></div></td>
+                  </tr>
+                  <tr>
+                    <td>Jan 18, 2026, 6:45 PM</td>
+                    <td><strong>BTC</strong><span class="table-subcopy">Bitcoin</span></td>
+                    <td>Bitcoin</td>
+                    <td><span class="type-pill pill-buy">BUY</span></td>
+                    <td>0.08500000</td>
+                    <td>$98,500.00</td>
+                    <td>$8,372.50</td>
+                    <td>$21.00</td>
+                    <td><strong>river-dca-8</strong><span class="table-subcopy">Scheduled accumulation</span></td>
+                    <td><div class="table-actions"><button class="button-secondary" type="button">Edit</button><button class="button-secondary" type="button">Delete</button></div></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="view" id="imports">
+            <header class="page-header">
+              <div>
+                <span class="eyebrow">Imports &amp; Exports</span>
+                <h1 class="page-title">Move trades in and out</h1>
+                <p class="page-subtitle">
+                  The real app now supports portfolio-scoped CSV and JSON import/export on top of the same manual ledger tables,
+                  so bulk records and backups follow the same data model.
+                </p>
+              </div>
+            </header>
+
+            <div class="two-column">
+              <article class="surface-card">
+                <span class="eyebrow">Import</span>
+                <h2>Upload CSV or JSON trades</h2>
+                <p class="section-copy">
+                  Rows are validated against the chain and asset catalog before they land in the ledger.
+                </p>
+                <div class="field-stack">
+                  <label class="field-group"><span>Format</span><select><option>Detect from file extension</option><option>CSV</option><option>JSON</option></select></label>
+                  <label class="field-group"><span>Trade file</span><input type="file" /></label>
+                  <div class="inline-actions"><button class="button-primary" type="button">Import Trades</button></div>
+                </div>
+              </article>
+
+              <article class="surface-card">
+                <span class="eyebrow">Export</span>
+                <h2>Download the current trade log</h2>
+                <p class="section-copy">Backups come straight from the portfolio ledger and can be downloaded as CSV or JSON.</p>
+                <div class="inline-actions">
+                  <button class="button-primary" type="button">Export CSV</button>
+                  <button class="button-secondary" type="button">Export JSON</button>
+                </div>
+              </article>
+            </div>
+          </section>
+          <section class="view" id="portfolios">
+            <header class="page-header">
+              <div>
+                <span class="eyebrow">Portfolio Model</span>
+                <h1 class="page-title">Multiple portfolios per account</h1>
+                <p class="page-subtitle">
+                  The new shell already supports create, switch, and archive flow so later wallet tracking,
+                  exchange sync, and reporting all stay separated by strategy.
+                </p>
+              </div>
+            </header>
+
+            <div class="content-grid">
+              <article class="surface-card">
+                <span class="eyebrow">Create</span>
+                <h2>Add a new portfolio</h2>
+                <div class="field-stack">
+                  <label class="field-group"><span>Name</span><input type="text" value="Long-Term Core" /></label>
+                  <label class="field-group"><span>Base Currency</span><input type="text" value="USD" /></label>
+                  <label class="field-group"><span>Description</span><input type="text" value="Long horizon accumulation and conviction holds." /></label>
+                  <button class="button-primary" type="button">Create Portfolio</button>
+                </div>
+              </article>
+
+              <article class="surface-card">
+                <span class="eyebrow">Current State</span>
+                <h2>2 total portfolios</h2>
+                <p class="section-copy">
+                  One portfolio is currently active and all ledger, import, and export flows now follow that context.
+                </p>
+              </article>
+            </div>
+
+            <div class="portfolio-grid">
+              <article class="portfolio-card">
+                <div class="portfolio-card-header">
+                  <div>
+                    <span class="eyebrow">USD</span>
+                    <h2 style="margin: 8px 0 0;">Long-Term Core</h2>
+                    <p class="section-copy">High conviction positions with slower turnover and larger size.</p>
+                  </div>
+                  <div class="portfolio-badges"><span class="status-chip">Active</span></div>
+                </div>
+                <div class="inline-actions">
+                  <button class="button-secondary" type="button">Current Portfolio</button>
+                  <button class="button-secondary" type="button">Archive</button>
+                </div>
+              </article>
+
+              <article class="portfolio-card">
+                <div class="portfolio-card-header">
+                  <div>
+                    <span class="eyebrow">USD</span>
+                    <h2 style="margin: 8px 0 0;">Swing Trading</h2>
+                    <p class="section-copy">Higher turnover portfolio for shorter-term setups and tactical trades.</p>
+                  </div>
+                  <div class="portfolio-badges"><span class="type-pill pill-neutral">INACTIVE</span></div>
+                </div>
+                <div class="inline-actions">
+                  <button class="button-secondary" type="button">Make Active</button>
+                  <button class="button-secondary" type="button">Archive</button>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <section class="view" id="settings">
+            <header class="page-header">
+              <div>
+                <span class="eyebrow">Settings</span>
+                <h1 class="page-title">Platform configuration shell</h1>
+                <p class="page-subtitle">
+                  This area stays intentionally light for now, but it is where profile defaults, provider
+                  choices, local-first options, and later alerts will grow.
+                </p>
+              </div>
+            </header>
+
+            <div class="content-grid">
+              <article class="surface-card">
+                <span class="eyebrow">Current Plan</span>
+                <h2>Settings surface</h2>
+                <p class="section-copy">
+                  Default locale, portfolio base currency, provider preferences, notification rules, and
+                  later encrypted local-first options will all live here.
+                </p>
+              </article>
+
+              <article class="surface-card">
+                <span class="eyebrow">Runtime</span>
+                <h2>Waiting on live project values</h2>
+                <p class="section-copy">
+                  Once Supabase keys and migrations are fully connected to your real project, this page becomes
+                  the home for profile and integration defaults.
+                </p>
+              </article>
+            </div>
+          </section>
+
+          <script>
+            const buttons = document.querySelectorAll("[data-view]");
+            const views = document.querySelectorAll(".view");
+
+            function setActiveView(viewId) {
+              views.forEach((view) => {
+                view.classList.toggle("active", view.id === viewId);
+              });
+
+              buttons.forEach((button) => {
+                button.classList.toggle("active", button.dataset.view === viewId);
+              });
+            }
+
+            buttons.forEach((button) => {
+              button.addEventListener("click", () => {
+                const viewId = button.dataset.view;
+                if (viewId) {
+                  setActiveView(viewId);
+                }
+              });
+            });
+          </script>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>
