@@ -47,6 +47,43 @@ body {
   padding: 48px 0 72px;
 }
 
+.landing-home {
+  display: grid;
+  gap: 24px;
+}
+
+.landing-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: stretch;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.landing-brand {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  justify-items: stretch;
+}
+
+.landing-brand-image {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.landing-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.landing-hero-section {
+  display: grid;
+}
+
 .hero-grid {
   display: grid;
   gap: 24px;
@@ -77,6 +114,22 @@ body {
   margin: 10px 0 14px;
   font-size: clamp(2.2rem, 5vw, 4.6rem);
   line-height: 0.96;
+}
+
+.landing-hero-card {
+  overflow: hidden;
+  position: relative;
+}
+
+.landing-hero-card::after {
+  content: "";
+  position: absolute;
+  inset: auto -100px -120px auto;
+  width: 260px;
+  height: 260px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(62, 134, 245, 0.26), transparent 68%);
+  pointer-events: none;
 }
 
 .eyebrow {
@@ -147,6 +200,39 @@ body {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.landing-stat-strip {
+  margin-top: 24px;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.landing-stat-card {
+  display: grid;
+  gap: 8px;
+  padding: 18px 20px;
+  border-radius: 20px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.landing-stat-card span {
+  color: var(--muted);
+  font-size: 0.82rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.landing-stat-card strong {
+  font-size: 1.35rem;
+}
+
+.landing-stat-card p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
 .metric-card {
   padding: 18px 20px;
 }
@@ -206,6 +292,18 @@ body {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.landing-feature-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.landing-feature-card {
+  min-height: 100%;
+}
+
+.landing-feature-card h2 {
+  font-size: 1.35rem;
+}
+
 .list-card ul {
   margin: 16px 0 0;
   padding-left: 18px;
@@ -227,6 +325,13 @@ body {
 
 .brand-card h1 {
   margin: 8px 0 10px;
+}
+
+.sidebar-brand-mark {
+  display: block;
+  width: 72px;
+  height: 72px;
+  margin-bottom: 6px;
 }
 
 .brand-card p,
@@ -372,6 +477,79 @@ body {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
   gap: 20px;
+}
+
+.landing-story-grid {
+  align-items: start;
+}
+
+.landing-workflow {
+  display: grid;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.landing-workflow-item {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+  padding: 16px 0;
+  border-top: 1px solid var(--line);
+}
+
+.landing-workflow-item:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+.landing-workflow-item strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 1rem;
+}
+
+.landing-workflow-item p {
+  margin: 0;
+}
+
+.landing-workflow-step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  background: rgba(62, 134, 245, 0.14);
+  border: 1px solid rgba(62, 134, 245, 0.26);
+  color: #c3d9ff;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.landing-principles {
+  display: grid;
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.landing-principles .inline-note strong {
+  display: block;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.landing-principles .inline-note span {
+  color: var(--muted);
+}
+
+.landing-bottom-cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-top: 0;
 }
 
 .auth-wrapper {
@@ -831,6 +1009,33 @@ body {
   gap: 14px;
 }
 
+.settings-stack,
+.settings-impact-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.settings-impact-card {
+  margin-top: 24px;
+}
+
+.settings-impact-grid {
+  margin-top: 18px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.settings-stack .inline-note strong,
+.settings-impact-grid .inline-note strong {
+  display: block;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.settings-stack .inline-note span,
+.settings-impact-grid .inline-note span {
+  color: var(--muted);
+}
+
 .connection-meta-grid {
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
@@ -986,6 +1191,11 @@ body {
     grid-template-columns: 1fr;
   }
 
+  .landing-feature-grid,
+  .landing-stat-strip {
+    grid-template-columns: 1fr;
+  }
+
   .shell {
     min-height: auto;
   }
@@ -1007,7 +1217,8 @@ body {
   }
 
   .field-grid,
-  .summary-grid {
+  .summary-grid,
+  .landing-bottom-cta {
     grid-template-columns: 1fr;
   }
 }

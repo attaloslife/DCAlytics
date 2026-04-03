@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { cache } from "react";
 
 import { isSupabaseConfigured } from "@/lib/env";
 import { buildPathWithNotice } from "@/lib/flash";
@@ -17,7 +18,7 @@ function getStringClaim(claims: ClaimsRecord | null, key: string) {
   return typeof value === "string" ? value : null;
 }
 
-export async function getAuthenticatedContext() {
+export const getAuthenticatedContext = cache(async () => {
   if (!isSupabaseConfigured()) {
     return null;
   }
@@ -44,7 +45,7 @@ export async function getAuthenticatedContext() {
     claims: typedClaims,
     profile: (profile as ProfileRow | null) ?? null
   };
-}
+});
 
 export async function requireAuthenticatedContext() {
   const context = await getAuthenticatedContext();

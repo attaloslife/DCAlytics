@@ -1,20 +1,27 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
+import { getRequestLocale } from "@/lib/i18n";
+
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "DCAlytics Web",
-  description: "Foundation shell for the next DCAlytics web application."
+  title: "PrismFolio",
+  description: "Your portfolio, in focus.",
+  icons: {
+    icon: "/prismfolio-mark.svg"
+  }
 };
 
 type RootLayoutProps = {
   children: ReactNode;
 };
 
-export default function RootLayout({ children }: RootLayoutProps) {
+export default async function RootLayout({ children }: RootLayoutProps) {
+  const locale = await getRequestLocale();
+
   return (
-    <html lang="en">
+    <html lang={locale}>
       <body>{children}</body>
     </html>
   );

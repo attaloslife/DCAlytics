@@ -5,13 +5,34 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { createClient } from "@/lib/supabase/client";
+import { formatMessage } from "@/lib/text";
+
+type ResetPasswordFormCopy = {
+  newPassword: string;
+  confirmPassword: string;
+  newPasswordPlaceholder: string;
+  confirmPasswordPlaceholder: string;
+  accountFallback: string;
+  passwordTooShort: string;
+  passwordsMustMatch: string;
+  updatePassword: string;
+  updating: string;
+  checkingRecovery: string;
+  invalidRecovery: string;
+  requestNewResetLink: string;
+  backToSignIn: string;
+  recoveryReady: string;
+  passwordUpdated: string;
+};
 
 type ResetPasswordFormProps = {
+  copy: ResetPasswordFormCopy;
   initialMessage?: string;
   initialError?: string;
 };
 
 export function ResetPasswordForm({
+  copy,
   initialMessage = "",
   initialError = ""
 }: ResetPasswordFormProps) {
@@ -74,12 +95,12 @@ export function ResetPasswordForm({
     setMessage("");
 
     if (password.length < 8) {
-      setError("Password must be at least 8 characters.");
+      setError(copy.passwordTooShort);
       return;
     }
 
     if (password !== confirmPassword) {
-      setError("Passwords must match.");
+      setError(copy.passwordsMustMatch);
       return;
     }
 
@@ -96,7 +117,7 @@ export function ResetPasswordForm({
     }
 
     await supabase.auth.signOut();
-    router.push("/sign-in?message=Password%20updated.%20Sign%20in%20with%20your%20new%20password.");
+    router.push(`/sign-in?message=${encodeURIComponent(copy.passwordUpdated)}`);
     router.refresh();
   }
 
@@ -105,7 +126,7 @@ export function ResetPasswordForm({
       <>
         {message ? <div className="banner banner-success">{message}</div> : null}
         {error ? <div className="banner banner-error">{error}</div> : null}
-        <div className="banner">Finishing the recovery session from your reset link...</div>
+        <div className="banner">{copy.checkingRecovery}</div>
       </>
     );
   }
@@ -115,17 +136,14 @@ export function ResetPasswordForm({
       <>
         {message ? <div className="banner banner-success">{message}</div> : null}
         {error ? <div className="banner banner-error">{error}</div> : null}
-        <div className="banner banner-error">
-          This page needs an active recovery session. Open the newest reset link from your email, or
-          request another one if the old link expired.
-        </div>
+        <div className="banner banner-error">{copy.invalidRecovery}</div>
 
         <div className="inline-actions">
           <Link href="/forgot-password" className="button-primary">
-            Request new reset link
+            {copy.requestNewResetLink}
           </Link>
           <Link href="/sign-in" className="button-secondary">
-            Back to sign in
+            {copy.backToSignIn}
           </Link>
         </div>
       </>
@@ -139,11 +157,11 @@ export function ResetPasswordForm({
 
       <form className="auth-form" onSubmit={handleSubmit}>
         <label>
-          <span>New Password</span>
+          <span>{copy.newPassword}</span>
           <input
             type="password"
             name="password"
-            placeholder="Create a new password"
+            placeholder={copy.newPasswordPlaceholder}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             required
@@ -151,11 +169,11 @@ export function ResetPasswordForm({
         </label>
 
         <label>
-          <span>Confirm Password</span>
+          <span>{copy.confirmPassword}</span>
           <input
             type="password"
             name="confirmPassword"
-            placeholder="Repeat the new password"
+            placeholder={copy.confirmPasswordPlaceholder}
             value={confirmPassword}
             onChange={(event) => setConfirmPassword(event.target.value)}
             required
@@ -163,13 +181,14 @@ export function ResetPasswordForm({
         </label>
 
         <button type="submit" className="button-primary" disabled={isSubmitting}>
-          {isSubmitting ? "Updating..." : "Update Password"}
+          {isSubmitting ? copy.updating : copy.updatePassword}
         </button>
       </form>
 
       <div className="banner">
-        Recovery session ready for {sessionEmail || "your account"}. After the password is updated,
-        you will be signed out and returned to sign in.
+        {formatMessage(copy.recoveryReady, {
+          sessionEmail: sessionEmail || copy.accountFallback
+        })}
       </div>
     </>
   );

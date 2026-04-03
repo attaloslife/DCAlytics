@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { signUpAction } from "@/app/(auth)/actions";
 import { getFlashMessages, getSingleSearchParam, resolveSearchParams } from "@/lib/flash";
+import { getRequestLocale } from "@/lib/i18n";
 
 type SignUpPageProps = {
   searchParams?:
@@ -10,10 +11,55 @@ type SignUpPageProps = {
 };
 
 export default async function SignUpPage({ searchParams }: SignUpPageProps) {
-  const [flash, resolvedSearchParams] = await Promise.all([
+  const [locale, flash, resolvedSearchParams] = await Promise.all([
+    getRequestLocale(),
     getFlashMessages(searchParams),
     resolveSearchParams(searchParams)
   ]);
+  const copy =
+    locale === "tr"
+      ? {
+          eyebrow: "Baslayin",
+          title: "Hesabinizi olusturun",
+          description:
+            "Portfoyler olusturmak, aktiviteleri takip etmek ve kripto verilerinizi tek yerde duzenli tutmak icin PrismFolio hesabinizi olusturun.",
+          displayName: "Gorunen Ad",
+          displayNamePlaceholder: "Adiniz",
+          email: "E-posta",
+          emailPlaceholder: "ad@example.com",
+          password: "Sifre",
+          passwordPlaceholder: "Bir sifre olusturun",
+          confirmPassword: "Sifreyi Dogrula",
+          confirmPasswordPlaceholder: "Sifrenizi tekrar girin",
+          submit: "Hesap Olustur",
+          confirmationRequired:
+            "Giris yapabilmek icin once e-postanizi dogrulamaniz gerekecek.",
+          resetPassword: "Sifreyi Sifirla",
+          signInInstead: "Onun yerine giris yap",
+          alreadyHaveAccount: "Zaten hesabin var",
+          backHome: "Ana sayfaya don"
+        }
+      : {
+          eyebrow: "Get Started",
+          title: "Create your account",
+          description:
+            "Create your PrismFolio account to start building portfolios, tracking activity, and keeping your crypto data organized in one place.",
+          displayName: "Display Name",
+          displayNamePlaceholder: "Your name",
+          email: "Email",
+          emailPlaceholder: "name@example.com",
+          password: "Password",
+          passwordPlaceholder: "Create a password",
+          confirmPassword: "Confirm Password",
+          confirmPasswordPlaceholder: "Repeat your password",
+          submit: "Create Account",
+          confirmationRequired:
+            "You'll need to confirm your email before you can sign in.",
+          resetPassword: "Reset Password",
+          signInInstead: "Sign In Instead",
+          alreadyHaveAccount: "Already have an account",
+          backHome: "Back home"
+        };
   const displayName = getSingleSearchParam(resolvedSearchParams, "displayName");
   const email = getSingleSearchParam(resolvedSearchParams, "email");
   const emailInUse = getSingleSearchParam(resolvedSearchParams, "emailInUse") === "1";
@@ -22,70 +68,79 @@ export default async function SignUpPage({ searchParams }: SignUpPageProps) {
   return (
     <main className="auth-wrapper">
       <section className="auth-card">
-        <span className="eyebrow">Authentication</span>
-        <h1>Create your account</h1>
-        <p className="muted">
-          This sign-up flow now targets Supabase email/password registration and the profile
-          bootstrap trigger in the database.
-        </p>
+        <span className="eyebrow">{copy.eyebrow}</span>
+        <h1>{copy.title}</h1>
+        <p className="muted">{copy.description}</p>
 
         {message ? <div className="banner banner-success">{message}</div> : null}
         {error ? <div className="banner banner-error">{error}</div> : null}
         {emailInUse ? (
           <div className="inline-actions">
             <Link href={`/forgot-password${email ? `?email=${encodeURIComponent(email)}` : ""}`} className="button-secondary">
-              Reset Password
+              {copy.resetPassword}
             </Link>
             <Link href={`/sign-in${email ? `?email=${encodeURIComponent(email)}` : ""}`} className="button-secondary">
-              Sign In Instead
+              {copy.signInInstead}
             </Link>
           </div>
         ) : null}
 
         <form className="auth-form" action={signUpAction}>
           <label>
-            <span>Display Name</span>
+            <span>{copy.displayName}</span>
             <input
               type="text"
               name="displayName"
-              placeholder="Your name"
+              placeholder={copy.displayNamePlaceholder}
               defaultValue={displayName}
               required
             />
           </label>
 
           <label>
-            <span>Email</span>
+            <span>{copy.email}</span>
             <input
               type="email"
               name="email"
-              placeholder="name@example.com"
+              placeholder={copy.emailPlaceholder}
               defaultValue={email}
               required
             />
           </label>
 
           <label>
-            <span>Password</span>
-            <input type="password" name="password" placeholder="Create a password" required />
+            <span>{copy.password}</span>
+            <input
+              type="password"
+              name="password"
+              placeholder={copy.passwordPlaceholder}
+              required
+            />
+          </label>
+
+          <label>
+            <span>{copy.confirmPassword}</span>
+            <input
+              type="password"
+              name="confirmPassword"
+              placeholder={copy.confirmPasswordPlaceholder}
+              required
+            />
           </label>
 
           <button type="submit" className="button-primary">
-            Create Account
+            {copy.submit}
           </button>
         </form>
 
-        <div className="banner">
-          If email confirmation is enabled in Supabase, the new confirmation route will exchange the
-          token for a session and continue into the app.
-        </div>
+        <div className="banner">{copy.confirmationRequired}</div>
 
         <div className="inline-actions">
           <Link href="/sign-in" className="button-secondary">
-            Already have an account
+            {copy.alreadyHaveAccount}
           </Link>
           <Link href="/" className="button-secondary">
-            Back home
+            {copy.backHome}
           </Link>
         </div>
       </section>

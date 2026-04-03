@@ -1,10 +1,12 @@
+import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { signOutAction } from "@/app/(auth)/actions";
 import { setActivePortfolioAction } from "@/app/(app)/portfolios/actions";
 import { getAuthenticatedContext } from "@/lib/auth";
-import { primaryAppNav } from "@/lib/navigation";
+import { getRequestLocale } from "@/lib/i18n";
+import { getPrimaryAppNav } from "@/lib/navigation";
 import { getActivePortfolioState } from "@/lib/portfolios";
 
 type AppShellProps = {
@@ -12,40 +14,88 @@ type AppShellProps = {
 };
 
 export async function AppShell({ children }: AppShellProps) {
-  const [authContext, portfolioState] = await Promise.all([
+  const [locale, authContext, portfolioState] = await Promise.all([
+    getRequestLocale(),
     getAuthenticatedContext(),
     getActivePortfolioState()
   ]);
   const portfolioCount = portfolioState.portfolios.filter((portfolio) => !portfolio.is_archived).length;
+  const primaryAppNav = getPrimaryAppNav(locale);
+  const copy =
+    locale === "tr"
+      ? {
+          eyebrow: "PrismFolio",
+          title: "Portfoyunuz, odakta.",
+          description:
+            "Portfoylerinizi, islemlerinizi, cuzdanlarinizi ve bagli veri kaynaklarinizi tek bir calisma alaninda duzenli tutun.",
+          accountFallback: "Dogrulanmis kullanici",
+          livePortfolioSingular: "aktif portfoy",
+          livePortfolioPlural: "aktif portfoy",
+          activePortfolio: "Aktif Portfoy",
+          selectActivePortfolio: "Aktif portfoyu sec",
+          noPortfoliosYet: "Henuz portfoy yok",
+          createPortfolio: "Portfoy Olustur",
+          switchPortfolio: "Portfoyu Degistir",
+          activePrefix: "Aktif",
+          noActivePortfolio: "Devam etmek icin ilk portfoyunuzu olusturun",
+          signOut: "Cikis Yap"
+        }
+      : {
+          eyebrow: "PrismFolio",
+          title: "Your portfolio, in focus.",
+          description:
+            "Keep your portfolios, trades, wallets, and connected data sources organized in one workspace.",
+          accountFallback: "Authenticated user",
+          livePortfolioSingular: "live portfolio",
+          livePortfolioPlural: "live portfolios",
+          activePortfolio: "Active Portfolio",
+          selectActivePortfolio: "Select active portfolio",
+          noPortfoliosYet: "No portfolios yet",
+          createPortfolio: "Create a Portfolio",
+          switchPortfolio: "Switch Portfolio",
+          activePrefix: "Active",
+          noActivePortfolio: "Create your first portfolio to continue",
+          signOut: "Sign Out"
+        };
 
   return (
     <div className="shell">
       <aside className="sidebar">
         <div className="brand-card">
-          <span className="eyebrow">DCAlytics</span>
-          <h1>Portfolio Workspace</h1>
-          <p>
-            The authenticated shell now includes portfolio switching plus the first real database-backed
-            ledger workflow for manual trades.
-          </p>
+          <Image
+            src="/prismfolio-mark.svg"
+            alt="PrismFolio"
+            width={72}
+            height={72}
+            className="sidebar-brand-mark"
+            priority
+          />
+          <span className="eyebrow">{copy.eyebrow}</span>
+          <h1>{copy.title}</h1>
+          <p>{copy.description}</p>
         </div>
 
         <div className="sidebar-account">
-          <strong>{authContext?.profile?.display_name || authContext?.email || "Authenticated user"}</strong>
-          <span>{portfolioCount} live portfolio{portfolioCount === 1 ? "" : "s"}</span>
+          <strong>
+            {authContext?.profile?.display_name || authContext?.email || copy.accountFallback}
+          </strong>
+          <span>
+            {portfolioCount}{" "}
+            {portfolioCount === 1 ? copy.livePortfolioSingular : copy.livePortfolioPlural}
+          </span>
         </div>
 
         <form action={setActivePortfolioAction} className="portfolio-switcher">
-          <span>Active Portfolio</span>
+          <span>{copy.activePortfolio}</span>
           <input type="hidden" name="returnTo" value="/dashboard" />
           <select
             name="portfolioId"
             defaultValue={portfolioState.activePortfolioId}
-            aria-label="Select active portfolio"
+            aria-label={copy.selectActivePortfolio}
             disabled={!portfolioState.portfolios.length}
           >
             {portfolioState.portfolios.length === 0 ? (
-              <option value="">No portfolios yet</option>
+              <option value="">{copy.noPortfoliosYet}</option>
             ) : (
               portfolioState.portfolios
                 .filter((portfolio) => !portfolio.is_archived)
@@ -58,7 +108,7 @@ export async function AppShell({ children }: AppShellProps) {
           </select>
           {portfolioState.portfolios.length === 0 ? (
             <Link href="/portfolios" className="button-secondary sidebar-button">
-              Create a Portfolio
+              {copy.createPortfolio}
             </Link>
           ) : (
             <button
@@ -66,7 +116,7 @@ export async function AppShell({ children }: AppShellProps) {
               className="button-secondary sidebar-button"
               disabled={!portfolioState.portfolios.length}
             >
-              Switch Portfolio
+              {copy.switchPortfolio}
             </button>
           )}
         </form>
@@ -74,12 +124,12 @@ export async function AppShell({ children }: AppShellProps) {
         {portfolioState.activePortfolio ? (
           <div className="sidebar-note">
             <span className="status-dot status-dot-ready" />
-            Active: {portfolioState.activePortfolio.name}
+            {copy.activePrefix}: {portfolioState.activePortfolio.name}
           </div>
         ) : (
           <div className="sidebar-note">
             <span className="status-dot" />
-            Create your first portfolio to continue
+            {copy.noActivePortfolio}
           </div>
         )}
 
@@ -92,13 +142,9 @@ export async function AppShell({ children }: AppShellProps) {
         </nav>
 
         <div className="sidebar-actions">
-          <Link href="/portfolios" className="button-secondary sidebar-button">
-            Manage Portfolios
-          </Link>
-
           <form action={signOutAction}>
             <button type="submit" className="button-secondary sidebar-button sidebar-button-full">
-              Sign Out
+              {copy.signOut}
             </button>
           </form>
         </div>

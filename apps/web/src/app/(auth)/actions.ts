@@ -7,21 +7,9 @@ import { z } from "zod";
 
 import { isSupabaseConfigured } from "@/lib/env";
 import { buildPathWithNotice } from "@/lib/flash";
+import { getRequestLocale, persistLocaleCookie } from "@/lib/i18n";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-
-const signInSchema = z.object({
-  email: z.string().email("Enter a valid email address."),
-  password: z.string().min(8, "Password must be at least 8 characters.")
-});
-
-const signUpSchema = signInSchema.extend({
-  displayName: z.string().trim().min(2, "Display name must be at least 2 characters.").max(80)
-});
-
-const forgotPasswordSchema = z.object({
-  email: z.string().email("Enter a valid email address.")
-});
 
 function getSafeOriginFromHeaders(headerStore: Headers) {
   const directOrigin = headerStore.get("origin");
@@ -34,6 +22,116 @@ function getSafeOriginFromHeaders(headerStore: Headers) {
   const proto = headerStore.get("x-forwarded-proto") || "http";
 
   return host ? `${proto}://${host}` : "";
+}
+
+function getAuthActionCopy(locale: "en" | "tr") {
+  if (locale === "tr") {
+    return {
+      errors: {
+        supabaseNotConfigured: "Ortam degiskenleri henuz yapilandirilmamis.",
+        reviewSignInDetails: "Lutfen giris bilgilerinizi kontrol edin.",
+        reviewSignUpDetails: "Lutfen kayit bilgilerinizi kontrol edin.",
+        reviewEmailAddress: "Lutfen e-posta adresinizi kontrol edin.",
+        duplicateDisplayName: "Bu gorunen ad zaten alinmis. Lutfen baska bir ad secin.",
+        validateDisplayNameLater:
+          "Bu gorunen adi su anda dogrulayamadik. Lutfen tekrar deneyin.",
+        validateEmailLater:
+          "Bu e-postayi su anda dogrulayamadik. Lutfen tekrar deneyin.",
+        emailAlreadyInUse:
+          "Bu e-posta zaten kullanimda. Giris yapmayi veya sifrenizi yenilemeyi deneyin.",
+        confirmEmailBeforeSignIn:
+          "Giris yapmadan once lutfen e-postanizi dogrulayin.",
+        emailConfirmationOff:
+          "Bu proje icin e-posta dogrulamasi kapali oldugu icin dogrulama e-postasi gonderilemedi. Kimlik dogrulama ayarlarinizda e-posta dogrulamayi acip tekrar deneyin.",
+        passwordResetRateLimited:
+          "Kisa sure icinde cok fazla hesap e-postasi istendi. Lutfen biraz bekleyip tekrar deneyin."
+      },
+      validation: {
+        emailInvalid: "Gecerli bir e-posta adresi girin.",
+        passwordMin: "Sifre en az 8 karakter olmali.",
+        displayNameMin: "Gorunen ad en az 2 karakter olmali.",
+        confirmPasswordRequired: "Lutfen sifrenizi dogrulayin.",
+        passwordsDoNotMatch: "Sifreler eslesmiyor."
+      },
+      messages: {
+        welcomeBack: "Tekrar hos geldiniz.",
+        checkEmailToConfirm:
+          "Giris yapmadan once hesabinizi dogrulamak icin e-postanizi kontrol edin.",
+        passwordResetSent: "Bu e-posta varsa, sifre yenileme baglantisi yolda.",
+        signedOut: "Cikis yapildi."
+      }
+    };
+  }
+
+  return {
+    errors: {
+      supabaseNotConfigured: "Environment variables are not configured yet.",
+      reviewSignInDetails: "Please review your sign-in details.",
+      reviewSignUpDetails: "Please review your sign-up details.",
+      reviewEmailAddress: "Please review your email address.",
+      duplicateDisplayName: "That display name is already taken. Please choose another one.",
+      validateDisplayNameLater:
+        "We could not validate that display name yet. Please try again.",
+      validateEmailLater: "We could not validate that email yet. Please try again.",
+      emailAlreadyInUse:
+        "That email is already in use. Try signing in or resetting your password.",
+      confirmEmailBeforeSignIn: "Please confirm your email before signing in.",
+      emailConfirmationOff:
+        "Email confirmation is turned off for this project, so no verification email could be sent. Turn on Confirm email in your auth settings and try again.",
+      passwordResetRateLimited:
+        "Too many account emails were requested recently. Please wait a few minutes and try again."
+    },
+    validation: {
+      emailInvalid: "Enter a valid email address.",
+      passwordMin: "Password must be at least 8 characters.",
+      displayNameMin: "Display name must be at least 2 characters.",
+      confirmPasswordRequired: "Please confirm your password.",
+      passwordsDoNotMatch: "Passwords do not match."
+    },
+    messages: {
+      welcomeBack: "Welcome back.",
+      checkEmailToConfirm: "Check your email to confirm your account before signing in.",
+      passwordResetSent:
+        "If that email exists, a password reset link is on the way.",
+      signedOut: "Signed out."
+    }
+  };
+}
+
+function createSignInSchema(locale: "en" | "tr") {
+  const copy = getAuthActionCopy(locale);
+
+  return z.object({
+    email: z.string().email(copy.validation.emailInvalid),
+    password: z.string().min(8, copy.validation.passwordMin)
+  });
+}
+
+function createSignUpSchema(locale: "en" | "tr") {
+  const copy = getAuthActionCopy(locale);
+
+  return createSignInSchema(locale)
+    .extend({
+      displayName: z.string().trim().min(2, copy.validation.displayNameMin).max(80),
+      confirmPassword: z.string().min(1, copy.validation.confirmPasswordRequired)
+    })
+    .superRefine(({ password, confirmPassword }, context) => {
+      if (password !== confirmPassword) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["confirmPassword"],
+          message: copy.validation.passwordsDoNotMatch
+        });
+      }
+    });
+}
+
+function createForgotPasswordSchema(locale: "en" | "tr") {
+  const copy = getAuthActionCopy(locale);
+
+  return z.object({
+    email: z.string().email(copy.validation.emailInvalid)
+  });
 }
 
 function isEmailAlreadyRegisteredError(message: string) {
@@ -55,16 +153,75 @@ function isDuplicateDisplayNameError(message: string) {
   );
 }
 
+function isEmailNotConfirmedError(message: string) {
+  return message.toLowerCase().includes("email not confirmed");
+}
+
+function getFriendlyAuthEmailError(
+  locale: "en" | "tr",
+  error: { message: string; code?: string | null }
+) {
+  const copy = getAuthActionCopy(locale);
+
+  if (
+    error.code === "over_email_send_rate_limit" ||
+    error.message.toLowerCase().includes("email rate limit exceeded")
+  ) {
+    return copy.errors.passwordResetRateLimited;
+  }
+
+  return error.message;
+}
+
+async function doesAuthUserExistByEmail(
+  email: string
+): Promise<{ exists: boolean; error?: string }> {
+  const normalizedEmail = email.trim().toLowerCase();
+  const adminSupabase = createAdminClient();
+  const perPage = 200;
+
+  for (let page = 1; page <= 25; page += 1) {
+    const { data, error } = await adminSupabase.auth.admin.listUsers({
+      page,
+      perPage
+    });
+
+    if (error) {
+      return {
+        exists: false,
+        error: error.message
+      };
+    }
+
+    if ((data.users || []).some((user) => user.email?.trim().toLowerCase() === normalizedEmail)) {
+      return {
+        exists: true
+      };
+    }
+
+    if ((data.users || []).length < perPage) {
+      break;
+    }
+  }
+
+  return {
+    exists: false
+  };
+}
+
 export async function signInAction(formData: FormData) {
+  const locale = await getRequestLocale();
+  const copy = getAuthActionCopy(locale);
+
   if (!isSupabaseConfigured()) {
     redirect(
       buildPathWithNotice("/sign-in", {
-        error: "Supabase environment variables are not configured yet."
+        error: copy.errors.supabaseNotConfigured
       })
     );
   }
 
-  const parsed = signInSchema.safeParse({
+  const parsed = createSignInSchema(locale).safeParse({
     email: formData.get("email"),
     password: formData.get("password")
   });
@@ -74,7 +231,7 @@ export async function signInAction(formData: FormData) {
   if (!parsed.success) {
     redirect(
       buildPathWithNotice("/sign-in", {
-        error: parsed.error.issues[0]?.message || "Please review your sign-in details.",
+        error: parsed.error.issues[0]?.message || copy.errors.reviewSignInDetails,
         fields: {
           email: submittedEmail
         }
@@ -83,12 +240,14 @@ export async function signInAction(formData: FormData) {
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword(parsed.data);
+  const { data, error } = await supabase.auth.signInWithPassword(parsed.data);
 
   if (error) {
     redirect(
       buildPathWithNotice("/sign-in", {
-        error: error.message,
+        error: isEmailNotConfirmedError(error.message)
+          ? copy.errors.confirmEmailBeforeSignIn
+          : error.message,
         fields: {
           email: parsed.data.email
         }
@@ -96,27 +255,39 @@ export async function signInAction(formData: FormData) {
     );
   }
 
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("default_locale")
+    .eq("id", data.user.id)
+    .maybeSingle();
+
+  await persistLocaleCookie(profile?.default_locale ?? locale);
+
   revalidatePath("/", "layout");
   redirect(
     buildPathWithNotice("/dashboard", {
-      message: "Welcome back."
+      message: copy.messages.welcomeBack
     })
   );
 }
 
 export async function signUpAction(formData: FormData) {
+  const locale = await getRequestLocale();
+  const copy = getAuthActionCopy(locale);
+
   if (!isSupabaseConfigured()) {
     redirect(
       buildPathWithNotice("/sign-up", {
-        error: "Supabase environment variables are not configured yet."
+        error: copy.errors.supabaseNotConfigured
       })
     );
   }
 
-  const parsed = signUpSchema.safeParse({
+  const parsed = createSignUpSchema(locale).safeParse({
     displayName: formData.get("displayName"),
     email: formData.get("email"),
-    password: formData.get("password")
+    password: formData.get("password"),
+    confirmPassword: formData.get("confirmPassword")
   });
 
   const submittedDisplayName = String(formData.get("displayName") || "").trim();
@@ -125,7 +296,7 @@ export async function signUpAction(formData: FormData) {
   if (!parsed.success) {
     redirect(
       buildPathWithNotice("/sign-up", {
-        error: parsed.error.issues[0]?.message || "Please review your sign-up details.",
+        error: parsed.error.issues[0]?.message || copy.errors.reviewSignUpDetails,
         fields: {
           displayName: submittedDisplayName,
           email: submittedEmail
@@ -148,7 +319,7 @@ export async function signUpAction(formData: FormData) {
   if (existingProfileError) {
     redirect(
       buildPathWithNotice("/sign-up", {
-        error: "We could not validate that display name yet. Please try again.",
+        error: copy.errors.validateDisplayNameLater,
         fields: {
           displayName: normalizedDisplayName,
           email: parsed.data.email
@@ -160,10 +331,39 @@ export async function signUpAction(formData: FormData) {
   if ((existingProfiles ?? []).length > 0) {
     redirect(
       buildPathWithNotice("/sign-up", {
-        error: "That display name is already taken. Please choose another one.",
+        error: copy.errors.duplicateDisplayName,
         fields: {
           displayName: normalizedDisplayName,
           email: parsed.data.email
+        }
+      })
+    );
+  }
+
+  const { exists: existingAuthUser, error: existingAuthUserError } = await doesAuthUserExistByEmail(
+    parsed.data.email
+  );
+
+  if (existingAuthUserError) {
+    redirect(
+      buildPathWithNotice("/sign-up", {
+        error: copy.errors.validateEmailLater,
+        fields: {
+          displayName: normalizedDisplayName,
+          email: parsed.data.email
+        }
+      })
+    );
+  }
+
+  if (existingAuthUser) {
+    redirect(
+      buildPathWithNotice("/sign-up", {
+        error: copy.errors.emailAlreadyInUse,
+        fields: {
+          displayName: normalizedDisplayName,
+          email: parsed.data.email,
+          emailInUse: "1"
         }
       })
     );
@@ -186,10 +386,10 @@ export async function signUpAction(formData: FormData) {
     redirect(
       buildPathWithNotice("/sign-up", {
         error: emailAlreadyInUse
-          ? "That email is already in use. Try signing in or resetting your password."
+          ? copy.errors.emailAlreadyInUse
           : isDuplicateDisplayNameError(error.message)
-            ? "That display name is already taken. Please choose another one."
-            : error.message,
+            ? copy.errors.duplicateDisplayName
+            : getFriendlyAuthEmailError(locale, error),
         fields: {
           displayName: normalizedDisplayName,
           email: parsed.data.email,
@@ -202,30 +402,43 @@ export async function signUpAction(formData: FormData) {
   revalidatePath("/", "layout");
 
   if (data.session) {
+    await supabase.auth.signOut();
+
+    if (data.user?.id) {
+      await adminSupabase.auth.admin.deleteUser(data.user.id);
+    }
+
     redirect(
-      buildPathWithNotice("/dashboard", {
-        message: "Account created successfully."
+      buildPathWithNotice("/sign-up", {
+        error: copy.errors.emailConfirmationOff,
+        fields: {
+          displayName: normalizedDisplayName,
+          email: parsed.data.email
+        }
       })
     );
   }
 
   redirect(
     buildPathWithNotice("/sign-in", {
-      message: "Check your email to confirm your account, then sign in."
+      message: copy.messages.checkEmailToConfirm
     })
   );
 }
 
 export async function requestPasswordResetAction(formData: FormData) {
+  const locale = await getRequestLocale();
+  const copy = getAuthActionCopy(locale);
+
   if (!isSupabaseConfigured()) {
     redirect(
       buildPathWithNotice("/forgot-password", {
-        error: "Supabase environment variables are not configured yet."
+        error: copy.errors.supabaseNotConfigured
       })
     );
   }
 
-  const parsed = forgotPasswordSchema.safeParse({
+  const parsed = createForgotPasswordSchema(locale).safeParse({
     email: formData.get("email")
   });
 
@@ -234,7 +447,7 @@ export async function requestPasswordResetAction(formData: FormData) {
   if (!parsed.success) {
     redirect(
       buildPathWithNotice("/forgot-password", {
-        error: parsed.error.issues[0]?.message || "Please review your email address.",
+        error: parsed.error.issues[0]?.message || copy.errors.reviewEmailAddress,
         fields: {
           email: submittedEmail
         }
@@ -252,7 +465,7 @@ export async function requestPasswordResetAction(formData: FormData) {
   if (error) {
     redirect(
       buildPathWithNotice("/forgot-password", {
-        error: "We could not send that reset email yet. Please try again.",
+        error: getFriendlyAuthEmailError(locale, error),
         fields: {
           email: parsed.data.email
         }
@@ -262,7 +475,7 @@ export async function requestPasswordResetAction(formData: FormData) {
 
   redirect(
     buildPathWithNotice("/forgot-password", {
-      message: "If that email exists, a password reset link is on the way.",
+      message: copy.messages.passwordResetSent,
       fields: {
         email: parsed.data.email
       }
@@ -271,6 +484,9 @@ export async function requestPasswordResetAction(formData: FormData) {
 }
 
 export async function signOutAction() {
+  const locale = await getRequestLocale();
+  const copy = getAuthActionCopy(locale);
+
   if (!isSupabaseConfigured()) {
     redirect("/sign-in");
   }
@@ -280,7 +496,7 @@ export async function signOutAction() {
   revalidatePath("/", "layout");
   redirect(
     buildPathWithNotice("/sign-in", {
-      message: "Signed out."
+      message: copy.messages.signedOut
     })
   );
 }

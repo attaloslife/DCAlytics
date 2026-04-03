@@ -1,20 +1,27 @@
-export const primaryAppNav = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/ledger/add", label: "Add Transaction" },
-  { href: "/ledger", label: "Trade Log" },
-  { href: "/imports", label: "Imports & Exports" },
-  { href: "/wallets", label: "Wallets" },
-  { href: "/exchanges", label: "Exchanges" },
-  { href: "/portfolios", label: "Portfolios" },
-  { href: "/settings", label: "Settings" }
-];
+import type { AppLocale } from "@/lib/locales";
 
-export const milestoneChecklist = [
-  "Supabase auth wired into the protected app shell",
-  "Multiple portfolios available in the switcher",
-  "Chain -> coin catalog powering manual transactions",
-  "Ledger entries moved from local storage into Postgres",
-  "Portfolio-scoped public wallet tracking foundation added",
-  "Read-only wallet preview pulling live balances from public providers",
-  "Read-only exchange connection foundation ready for live sync work"
-];
+export function getPrimaryAppNav(locale: AppLocale) {
+  if (locale === "tr") {
+    return [
+      { href: "/dashboard", label: "Panel" },
+      { href: "/ledger/add", label: "Islem Ekle" },
+      { href: "/ledger", label: "Islem Gecmisi" },
+      { href: "/imports", label: "Ice Aktar / Disa Aktar" },
+      { href: "/wallets", label: "Cuzdanlar" },
+      { href: "/exchanges", label: "Borsalar" },
+      { href: "/portfolios", label: "Portfoyler" },
+      { href: "/settings", label: "Ayarlar" }
+    ];
+  }
+
+  return [
+    { href: "/dashboard", label: "Dashboard" },
+    { href: "/ledger/add", label: "Add Transaction" },
+    { href: "/ledger", label: "Trade Log" },
+    { href: "/imports", label: "Imports & Exports" },
+    { href: "/wallets", label: "Wallets" },
+    { href: "/exchanges", label: "Exchanges" },
+    { href: "/portfolios", label: "Portfolios" },
+    { href: "/settings", label: "Settings" }
+  ];
+}

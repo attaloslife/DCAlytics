@@ -5,6 +5,7 @@ import {
   updatePortfolioAction
 } from "@/app/(app)/portfolios/actions";
 import { PortfolioDeleteButton } from "@/components/portfolio-delete-button";
+import { getAuthenticatedContext } from "@/lib/auth";
 import { baseCurrencyOptions } from "@/lib/currencies";
 import { getFlashMessages } from "@/lib/flash";
 import { getActivePortfolioState, getPortfolioActivitySummaries } from "@/lib/portfolios";
@@ -15,11 +16,13 @@ type PortfoliosPageProps = {
 };
 
 export default async function PortfoliosPage({ searchParams }: PortfoliosPageProps) {
-  const [{ activePortfolioId, portfolios }, activitySummaries, { message, error }] = await Promise.all([
+  const [authContext, { activePortfolioId, portfolios }, activitySummaries, { message, error }] = await Promise.all([
+    getAuthenticatedContext(),
     getActivePortfolioState(),
     getPortfolioActivitySummaries(),
     getFlashMessages(searchParams)
   ]);
+  const profileDefaultCurrency = authContext?.profile?.default_currency?.toLowerCase() || "usd";
 
   return (
     <section className="content-card">
@@ -54,12 +57,17 @@ export default async function PortfoliosPage({ searchParams }: PortfoliosPagePro
 
             <label>
               <span>Base Currency</span>
-              <select name="baseCurrency" defaultValue="usd" required>
+              <select name="baseCurrency" defaultValue={profileDefaultCurrency} required>
                 {baseCurrencyOptions.map((currency) => (
                   <option key={currency.value} value={currency.value}>
                     {currency.label}
                   </option>
                 ))}
+                {!baseCurrencyOptions.some((currency) => currency.value === profileDefaultCurrency) ? (
+                  <option value={profileDefaultCurrency}>
+                    {profileDefaultCurrency.toUpperCase()} - Profile default
+                  </option>
+                ) : null}
               </select>
             </label>
 

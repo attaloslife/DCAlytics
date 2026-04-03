@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 
 import { requireAuthenticatedContext } from "@/lib/auth";
 
-export const ACTIVE_PORTFOLIO_COOKIE = "dcalytics-active-portfolio";
+export const ACTIVE_PORTFOLIO_COOKIE = "prismfolio-active-portfolio";
 
 export type PortfolioRecord = {
   id: string;
