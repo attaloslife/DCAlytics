@@ -91,6 +91,17 @@ export type LedgerSummary = {
   totalFees: number;
 };
 
+export type LedgerPositionRecord = {
+  assetId: string;
+  symbol: string;
+  name: string;
+  marketId: string | null;
+  quantity: number;
+  averageCost: number | null;
+  costBasis: number | null;
+  lastOccurredAt: string;
+};
+
 export type ManualLedgerMutationInput = {
   portfolioId: string;
   chainId: string | null;
@@ -214,6 +225,86 @@ export function getLedgerSummary(entries: LedgerEntryRecord[]): LedgerSummary {
       totalFees: 0
     }
   );
+}
+
+export function getLedgerPositions(entries: LedgerEntryRecord[]) {
+  const positionMap = new Map<
+    string,
+    {
+      assetId: string;
+      symbol: string;
+      name: string;
+      marketId: string | null;
+      boughtQuantity: number;
+      soldQuantity: number;
+      buyCost: number;
+      lastOccurredAt: string;
+    }
+  >();
+
+  for (const entry of entries) {
+    if (entry.entryType !== "buy" && entry.entryType !== "sell") {
+      continue;
+    }
+
+    const quantity = toNumber(entry.quantity) ?? 0;
+    const grossValue = toNumber(entry.grossValue) ?? 0;
+    const feeValue = toNumber(entry.feeValue) ?? 0;
+    const position = positionMap.get(entry.assetId) || {
+      assetId: entry.assetId,
+      symbol: entry.asset?.symbol || "Unknown",
+      name: entry.asset?.name || "Unknown Asset",
+      marketId: entry.asset?.coingeckoId || null,
+      boughtQuantity: 0,
+      soldQuantity: 0,
+      buyCost: 0,
+      lastOccurredAt: entry.occurredAt
+    };
+
+    if (entry.entryType === "buy") {
+      position.boughtQuantity += quantity;
+      position.buyCost += grossValue + feeValue;
+    }
+
+    if (entry.entryType === "sell") {
+      position.soldQuantity += quantity;
+    }
+
+    if (entry.occurredAt > position.lastOccurredAt) {
+      position.lastOccurredAt = entry.occurredAt;
+    }
+
+    positionMap.set(entry.assetId, position);
+  }
+
+  return [...positionMap.values()]
+    .map<LedgerPositionRecord>((position) => {
+      const quantity = position.boughtQuantity - position.soldQuantity;
+      const averageCost = position.boughtQuantity > 0 ? position.buyCost / position.boughtQuantity : null;
+      const costBasis =
+        averageCost !== null && quantity > 0
+          ? averageCost * quantity
+          : null;
+
+      return {
+        assetId: position.assetId,
+        symbol: position.symbol,
+        name: position.name,
+        marketId: position.marketId,
+        quantity,
+        averageCost,
+        costBasis,
+        lastOccurredAt: position.lastOccurredAt
+      };
+    })
+    .filter((position) => position.quantity > 0)
+    .sort((left, right) => {
+      if (right.quantity !== left.quantity) {
+        return right.quantity - left.quantity;
+      }
+
+      return left.symbol.localeCompare(right.symbol);
+    });
 }
 
 export function buildManualSourcePayload(

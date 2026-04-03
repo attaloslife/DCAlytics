@@ -1,6 +1,7 @@
 import "server-only";
 
-import { getHistoricalCoinPrice, type CoinCatalogEntry } from "@/lib/coingecko";
+import { type CoinCatalogEntry } from "@/lib/coingecko";
+import { getOrFetchHistoricalPrice } from "@/lib/market-data";
 
 type TxidNetworkConfig = {
   key: string;
@@ -603,7 +604,7 @@ async function fetchBitcoinTxidPrefill(networkConfig: TxidNetworkConfig, transac
         quantity: "",
         note: `${coin.name} is not the native asset on ${networkConfig.label}, so quantity needs review.`
       };
-  const historicalPrice = await getHistoricalCoinPrice(coin.marketId, transactionTimestampMs, currencyCode);
+  const historicalPrice = await getOrFetchHistoricalPrice(coin, transactionTimestampMs, currencyCode);
 
   return {
     networkKey: networkConfig.key,
@@ -664,7 +665,7 @@ async function fetchEvmTxidPrefill(networkConfig: TxidNetworkConfig, transaction
   }
 
   const transactionTimestampMs = getTimestampMs(transactionDetails?.timestamp);
-  const historicalPrice = await getHistoricalCoinPrice(coin.marketId, transactionTimestampMs, currencyCode);
+  const historicalPrice = await getOrFetchHistoricalPrice(coin, transactionTimestampMs, currencyCode);
 
   return {
     networkKey: networkConfig.key,
@@ -744,7 +745,7 @@ async function fetchSolanaTxidPrefill(networkConfig: TxidNetworkConfig, transact
   }
 
   const transactionTimestampMs = getTimestampMs(transactionDetails?.blockTime);
-  const historicalPrice = await getHistoricalCoinPrice(coin.marketId, transactionTimestampMs, currencyCode);
+  const historicalPrice = await getOrFetchHistoricalPrice(coin, transactionTimestampMs, currencyCode);
 
   return {
     networkKey: networkConfig.key,

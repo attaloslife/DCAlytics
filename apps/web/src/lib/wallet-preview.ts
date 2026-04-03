@@ -2,6 +2,7 @@ import { cache } from "react";
 
 import { getCoinGeckoApiBaseUrl, getCoinGeckoHeaders } from "@/lib/coingecko-config";
 import { toNumber } from "@/lib/format";
+import { getOrFetchSpotPrices } from "@/lib/market-data";
 import type { WalletAddressRecord } from "@/lib/wallets";
 
 const BLOCKSCOUT_API_BY_CHAIN: Record<string, string> = {
@@ -287,40 +288,7 @@ function finalizePreview(draft: PreviewDraft): WalletLivePreview {
 }
 
 async function getCoinGeckoSimplePrices(coinIds: string[], currencyCode: string) {
-  const uniqueCoinIds = Array.from(new Set(coinIds.filter(Boolean)));
-  const coinGeckoApiBaseUrl = getCoinGeckoApiBaseUrl();
-
-  if (uniqueCoinIds.length === 0) {
-    return new Map<string, number>();
-  }
-
-  const params = new URLSearchParams({
-    ids: uniqueCoinIds.join(","),
-    vs_currencies: currencyCode,
-    include_last_updated_at: "true"
-  });
-
-  const response = await fetchJson<CoinGeckoSimplePriceResponse>(
-    `${coinGeckoApiBaseUrl}/simple/price?${params.toString()}`,
-    {
-      headers: getCoinGeckoHeaders(),
-      next: {
-        revalidate: LIVE_PRICE_REVALIDATE_SECONDS
-      }
-    }
-  );
-  const priceMap = new Map<string, number>();
-
-  for (const coinId of uniqueCoinIds) {
-    const record = response[coinId];
-    const price = toNumber(record?.[currencyCode]);
-
-    if (price !== null) {
-      priceMap.set(coinId, price);
-    }
-  }
-
-  return priceMap;
+  return getOrFetchSpotPrices(coinIds, currencyCode, LIVE_PRICE_REVALIDATE_SECONDS);
 }
 
 async function getCoinGeckoTokenPrices(

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { searchCoinCatalog } from "@/lib/coingecko";
+import { searchCoinCatalogWithCache } from "@/lib/market-data";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -12,7 +12,7 @@ export async function GET(request: Request) {
     });
   }
 
-  const results = await searchCoinCatalog(query, 8);
+  const results = await searchCoinCatalogWithCache(query, 8);
 
   return NextResponse.json({
     results: results.map((entry) => ({

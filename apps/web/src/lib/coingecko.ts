@@ -328,7 +328,7 @@ function getClosestPricePoint(points: CoinGeckoPricePoint[] | undefined, targetT
   return closestPoint;
 }
 
-export async function getHistoricalCoinPrice(
+export async function fetchHistoricalCoinPrice(
   marketId: string,
   timestampValue: string | number,
   currencyCode: string
@@ -409,3 +409,5 @@ export async function getHistoricalCoinPrice(
     note: `Historical ${normalizedCurrencyCode.toUpperCase()} price was prefilled from CoinGecko.`
   } satisfies HistoricalPriceResult;
 }
+
+export const getHistoricalCoinPrice = fetchHistoricalCoinPrice;

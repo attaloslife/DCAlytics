@@ -515,6 +515,34 @@ body {
   resize: vertical;
 }
 
+.checkbox-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.checkbox-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text);
+}
+
+.checkbox-option input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--blue);
+  margin: 0;
+}
+
+.checkbox-option span {
+  color: var(--text);
+  line-height: 1.5;
+}
+
 .inline-note {
   padding: 14px 16px;
   border-radius: 16px;
@@ -599,6 +627,14 @@ body {
   display: grid;
   gap: 16px;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.dashboard-secondary-grid {
+  margin-top: 24px;
+}
+
+.dashboard-positions-card {
+  margin-top: 24px;
 }
 
 .picker-results {
@@ -787,6 +823,49 @@ body {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
+}
+
+.connection-meta-grid,
+.integration-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.connection-meta-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.connection-meta-grid .inline-note strong {
+  display: block;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.connection-meta-grid .inline-note span {
+  color: var(--muted);
+}
+
+.integration-grid {
+  margin-top: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.integration-card {
+  display: grid;
+  gap: 8px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.integration-card strong {
+  font-size: 1rem;
+}
+
+.integration-card span {
+  color: var(--muted);
+  line-height: 1.6;
 }
 
 .wallet-card {
